@@ -12,7 +12,10 @@ type
     bsBuildExe,
     bsPatchExe,
     bsPackData,
-    bsCopy
+    bsCopy,
+    bsPack7zip,
+    bsPackInstaller,
+    bsCommitAndTag
   );
   TKMBuilderStepSet = set of TKMBuilderStep;
 
@@ -23,7 +26,10 @@ const
     'Build executables',
     'Patch game executable',
     'Packing data',
-    'Copy into build folder'
+    'Copy into build folder',
+    'Pack 7-zip',
+    'Pack installer',
+    'Commit and Tag'
   );
 
 type
@@ -35,6 +41,7 @@ type
     fOnDone: TProc;
     fWorker: TThread;
 
+    fGameName: string;
     fBuildVersion: string;
     fBuildRevision: Integer;
     fBuildFolder: string;
@@ -52,18 +59,40 @@ type
     procedure Step4_PatchGameExe;
     procedure Step5_PackData;
     procedure Step6_CopyIntoBuildFolder;
+    procedure Step7_Pack7zip;
+    procedure Step8_PackInstaller;
+    procedure Step9_CommitAndTag;
   public
-    constructor Create(const aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
+    constructor Create(const aGameName, aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
     procedure Perform(aSteps: TKMBuilderStepSet);
     procedure Stop;
+
+    property BuildRevision: Integer read fBuildRevision;
+    property BuildFolder: string read fBuildFolder;
   end;
 
 
 implementation
 uses
-  System.IOUtils, System.Masks, System.DateUtils,
-  System.StrUtils, System.Generics.Collections,
+  System.IOUtils, System.Masks, System.DateUtils, System.StrUtils, System.Generics.Collections,
   KromUtils;
+
+
+{ TKMBuilder }
+constructor TKMBuilder.Create(const aGameName, aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
+begin
+  inherited Create;
+
+  fGameName := aGameName;
+  fBuildVersion := aBuildVersion;
+  fOnLog := aOnLog;
+  fOnStepBegin := aOnStepBegin;
+  fOnStepDone := aOnStepDone;
+  fOnDone := aOnDone;
+
+  fBuildRevision := -1;
+  fBuildFolder := '<no folder>';
+end;
 
 
 function TKMBuilder.CheckTerminated: Boolean;
@@ -179,21 +208,6 @@ begin
 end;
 
 
-{ TKMBuilder }
-constructor TKMBuilder.Create(const aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
-begin
-  inherited Create;
-
-
-  fOnLog := aOnLog;
-  fOnStepBegin := aOnStepBegin;
-  fOnStepDone := aOnStepDone;
-  fOnDone := aOnDone;
-
-  fBuildVersion := aBuildVersion;
-end;
-
-
 procedure TKMBuilder.Stop;
 begin
   if fWorker = nil then Exit;
@@ -217,18 +231,6 @@ begin
   // Write revision number for game exe and launcher/updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
   TFile.WriteAllText('.\version', fBuildVersion + ' r' + IntToStr(fBuildRevision));
-
-  if CheckTerminated then Exit;
-
-  fOnLog('commit ..');
-  var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
-  CreateProcessSimple(cmdCommit, False, True, False);
-
-  if CheckTerminated then Exit;
-
-  fOnLog('tag ..');
-  var cmdTag := Format('git tag r%d', [fBuildRevision]);
-  CreateProcessSimple(cmdTag, False, True, False);
 
   var dtNow := Now;
   fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fBuildVersion, fBuildRevision]);
@@ -393,6 +395,68 @@ begin
 end;
 
 
+procedure TKMBuilder.Step7_Pack7zip;
+begin
+  var cmd7zip := Format('"C:\Program Files\7-Zip\7z.exe" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s.7z" "%s"', [ExcludeTrailingPathDelimiter(fBuildFolder), fBuildFolder]);
+  var res := CaptureConsoleOutput('.\', cmd7zip);
+  fOnLog(res);
+
+  var szAfter := TFile.GetSize(fBuildFolder + '.7z');
+  fOnLog(Format('Size of data.pack - %d bytes', [szAfter]));
+end;
+
+
+procedure TKMBuilder.Step8_PackInstaller;
+begin
+  var installerExeName := Format('%s (%s r%d) Installer.exe', [fGameName, fBuildVersion, fBuildRevision]);
+
+  // Delete old installer if we had it for some reason
+  DeleteFile(installerExeName);
+
+  var sl := TStringList.Create;
+  sl.Append('; REVISION (write into Registry)');
+  sl.Append(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
+  sl.Append('');
+  sl.Append('; Folder from where files get taken');
+  sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [ExcludeTrailingPathDelimiter(fBuildFolder)]));
+  sl.Append('');
+  sl.Append('; How the installer executable will be named');
+  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [ChangeFileExt(installerExeName, '')]));
+  sl.Append('');
+  sl.Append('; Application name used in many places');
+  sl.Append(Format('#define MyAppName '#39'%s r%d'#39, [fBuildVersion, fBuildRevision]));
+  sl.Append('');
+  sl.Append(Format('#define MyAppExeName '#39'%s'#39, ['KnightsProvince.exe']));
+  sl.Append(Format('#define Website '#39'%s'#39, ['http://www.knightsprovince.com/']));
+
+  sl.SaveToFile('.\installer\Constants.iss');
+  sl.Free;
+
+  if CheckTerminated then Exit;
+
+  var cmdInstaller := Format('"C:\Program Files (x86)\Inno Setup 6\iscc.exe" ".\installer\InstallerFull.iss"', []);
+  var res := CaptureConsoleOutput('.\', cmdInstaller);
+  fOnLog(res);
+
+  var szAfter := TFile.GetSize(installerExeName);
+  fOnLog(Format('Size of "%s" - %d bytes', [installerExeName, szAfter]));
+end;
+
+
+procedure TKMBuilder.Step9_CommitAndTag;
+begin
+  fOnLog('commit ..');
+  var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
+  CreateProcessSimple(cmdCommit, False, True, False);
+
+  if CheckTerminated then Exit;
+
+  fOnLog('tag ..');
+  var cmdTag := Format('git tag r%d', [fBuildRevision]);
+  CreateProcessSimple(cmdTag, False, True, False);
+end;
+
+
 procedure TKMBuilder.Perform(aSteps: TKMBuilderStepSet);
 var
   theSteps: TKMBuilderStepSet;
@@ -411,12 +475,15 @@ begin
         var t := GetTickCount;
 
         case I of
-          bsStartBuild:  Step1_GetRevisionCommitAndTag;
-          bsCleanSource: Step2_CleanSource;
-          bsBuildExe:    Step3_BuildGameExe;
-          bsPatchExe:    Step4_PatchGameExe;
-          bsPackData:    Step5_PackData;
-          bsCopy:        Step6_CopyIntoBuildFolder;
+          bsStartBuild:     Step1_GetRevisionCommitAndTag;
+          bsCleanSource:    Step2_CleanSource;
+          bsBuildExe:       Step3_BuildGameExe;
+          bsPatchExe:       Step4_PatchGameExe;
+          bsPackData:       Step5_PackData;
+          bsCopy:           Step6_CopyIntoBuildFolder;
+          bsPack7zip:       Step7_Pack7zip;
+          bsPackInstaller:  Step8_PackInstaller;
+          bsCommitAndTag:   Step9_CommitAndTag;
         end;
 
         fOnStepDone(I, GetTickCount - t);

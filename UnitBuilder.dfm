@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Game Builder'
-  ClientHeight = 513
+  ClientHeight = 569
   ClientWidth = 945
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,22 +13,79 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     945
-    513)
+    569)
   TextHeight = 15
   object Label5: TLabel
     Left = 16
-    Top = 16
+    Top = 64
     Width = 91
     Height = 13
     AutoSize = False
     Caption = 'Game version'
     WordWrap = True
   end
-  object Memo1: TMemo
-    Left = 328
+  object Label1: TLabel
+    Left = 16
+    Top = 112
+    Width = 91
+    Height = 13
+    AutoSize = False
+    Caption = 'Build revision'
+    WordWrap = True
+  end
+  object Label2: TLabel
+    Left = 16
+    Top = 152
+    Width = 91
+    Height = 13
+    AutoSize = False
+    Caption = 'Build folder'
+    WordWrap = True
+  end
+  object lblBuildRevision: TLabel
+    Left = 24
+    Top = 128
+    Width = 97
+    Height = 25
+    AutoSize = False
+    Caption = 'Build revision'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -19
+    Font.Name = 'Segoe UI'
+    Font.Style = [fsBold]
+    ParentFont = False
+    WordWrap = True
+  end
+  object lblBuildFolder: TLabel
+    Left = 24
+    Top = 168
+    Width = 353
+    Height = 25
+    AutoSize = False
+    Caption = 'Build folder'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -19
+    Font.Name = 'Segoe UI'
+    Font.Style = [fsBold]
+    ParentFont = False
+    WordWrap = True
+  end
+  object Label3: TLabel
+    Left = 16
     Top = 16
-    Width = 601
-    Height = 481
+    Width = 91
+    Height = 13
+    AutoSize = False
+    Caption = 'Game name'
+    WordWrap = True
+  end
+  object Memo1: TMemo
+    Left = 384
+    Top = 16
+    Width = 545
+    Height = 537
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -45,8 +102,8 @@ object Form1: TForm1
   end
   object btnStop: TButton
     Left = 16
-    Top = 472
-    Width = 178
+    Top = 520
+    Width = 289
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
@@ -58,93 +115,88 @@ object Form1: TForm1
   end
   object edBuildVersion: TEdit
     Left = 16
-    Top = 32
+    Top = 80
     Width = 177
     Height = 23
     TabOrder = 2
     Text = 'Alpha 13 wip'
   end
   object btnStep1: TButton
-    Left = 16
-    Top = 120
-    Width = 177
+    Left = 40
+    Top = 232
+    Width = 185
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Step1_Commit'
+    Caption = 'Step1'
     TabOrder = 3
-    OnClick = btnStep1Click
+    OnClick = btnStepClick
   end
   object btnStep2: TButton
-    Left = 16
-    Top = 152
-    Width = 177
+    Left = 40
+    Top = 264
+    Width = 185
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Step3_CleanSources'
+    Caption = 'Step2'
     TabOrder = 4
-    OnClick = btnStep2Click
   end
   object btnStep3: TButton
-    Left = 16
-    Top = 184
-    Width = 177
+    Left = 40
+    Top = 296
+    Width = 185
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Step4_BuildGameExe'
+    Caption = 'Step3'
     TabOrder = 5
-    OnClick = btnStep3Click
   end
   object btnStep4: TButton
-    Left = 16
-    Top = 216
-    Width = 177
+    Left = 40
+    Top = 328
+    Width = 185
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Step5_PatchGameExe'
+    Caption = 'Step4'
     TabOrder = 6
-    OnClick = btnStep4Click
   end
   object btnStep5: TButton
-    Left = 16
-    Top = 248
-    Width = 177
+    Left = 40
+    Top = 360
+    Width = 185
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Step6 PackData'
+    Caption = 'Step5'
     TabOrder = 7
-    OnClick = btnStep5Click
   end
   object btnStep6: TButton
-    Left = 16
-    Top = 280
-    Width = 177
+    Left = 40
+    Top = 392
+    Width = 185
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Step7 CopyIntoBuildFolder'
+    Caption = 'Step6'
     TabOrder = 8
-    OnClick = btnStep6Click
   end
   object pnlStep1: TPanel
-    Left = 200
-    Top = 120
+    Left = 232
+    Top = 232
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -155,8 +207,8 @@ object Form1: TForm1
     TabOrder = 9
   end
   object pnlStep2: TPanel
-    Left = 200
-    Top = 152
+    Left = 232
+    Top = 264
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -167,8 +219,8 @@ object Form1: TForm1
     TabOrder = 10
   end
   object pnlStep3: TPanel
-    Left = 200
-    Top = 184
+    Left = 232
+    Top = 296
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -179,8 +231,8 @@ object Form1: TForm1
     TabOrder = 11
   end
   object pnlStep4: TPanel
-    Left = 200
-    Top = 216
+    Left = 232
+    Top = 328
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -191,8 +243,8 @@ object Form1: TForm1
     TabOrder = 12
   end
   object pnlStep5: TPanel
-    Left = 200
-    Top = 248
+    Left = 232
+    Top = 360
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -203,8 +255,8 @@ object Form1: TForm1
     TabOrder = 13
   end
   object pnlStep6: TPanel
-    Left = 200
-    Top = 280
+    Left = 232
+    Top = 392
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -216,8 +268,8 @@ object Form1: TForm1
   end
   object btnBuildPack7z: TButton
     Left = 16
-    Top = 88
-    Width = 257
+    Top = 200
+    Width = 289
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
@@ -225,6 +277,168 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Build pack7z'
     TabOrder = 15
-    OnClick = btnBuildPack7zClick
+    OnClick = btnBuild
+  end
+  object btnStep7: TButton
+    Left = 40
+    Top = 424
+    Width = 185
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
+    Caption = 'Step7'
+    TabOrder = 16
+  end
+  object pnlStep7: TPanel
+    Left = 232
+    Top = 424
+    Width = 73
+    Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
+    Caption = '-'
+    Color = clGray
+    ParentBackground = False
+    TabOrder = 17
+  end
+  object btnStep8: TButton
+    Left = 40
+    Top = 456
+    Width = 185
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
+    Caption = 'Step8'
+    TabOrder = 18
+  end
+  object pnlStep8: TPanel
+    Left = 232
+    Top = 456
+    Width = 73
+    Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
+    Caption = '-'
+    Color = clGray
+    ParentBackground = False
+    TabOrder = 19
+  end
+  object cbStep1: TCheckBox
+    Left = 16
+    Top = 232
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 20
+  end
+  object cbStep2: TCheckBox
+    Left = 16
+    Top = 264
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 21
+  end
+  object cbStep3: TCheckBox
+    Left = 16
+    Top = 296
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 22
+  end
+  object cbStep4: TCheckBox
+    Left = 16
+    Top = 328
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 23
+  end
+  object cbStep5: TCheckBox
+    Left = 16
+    Top = 360
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 24
+  end
+  object cbStep6: TCheckBox
+    Left = 16
+    Top = 392
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 25
+  end
+  object cbStep7: TCheckBox
+    Left = 16
+    Top = 424
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 26
+  end
+  object cbStep8: TCheckBox
+    Left = 16
+    Top = 456
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 27
+  end
+  object btnStep9: TButton
+    Left = 40
+    Top = 488
+    Width = 185
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
+    Caption = 'Step9'
+    TabOrder = 28
+  end
+  object pnlStep9: TPanel
+    Left = 232
+    Top = 488
+    Width = 73
+    Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
+    Caption = '-'
+    Color = clGray
+    ParentBackground = False
+    TabOrder = 29
+  end
+  object cbStep9: TCheckBox
+    Left = 16
+    Top = 488
+    Width = 17
+    Height = 25
+    Caption = 'Step8'
+    Checked = True
+    State = cbChecked
+    TabOrder = 30
+  end
+  object edGameName: TEdit
+    Left = 16
+    Top = 32
+    Width = 177
+    Height = 23
+    TabOrder = 31
+    Text = 'Knights Province'
   end
 end

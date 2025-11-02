@@ -25,17 +25,34 @@ type
     pnlStep5: TPanel;
     pnlStep6: TPanel;
     btnBuildPack7z: TButton;
-    procedure btnStep3Click(Sender: TObject);
+    btnStep7: TButton;
+    pnlStep7: TPanel;
+    Label1: TLabel;
+    Label2: TLabel;
+    lblBuildRevision: TLabel;
+    lblBuildFolder: TLabel;
+    btnStep8: TButton;
+    pnlStep8: TPanel;
+    cbStep1: TCheckBox;
+    cbStep2: TCheckBox;
+    cbStep3: TCheckBox;
+    cbStep4: TCheckBox;
+    cbStep5: TCheckBox;
+    cbStep6: TCheckBox;
+    cbStep7: TCheckBox;
+    cbStep8: TCheckBox;
+    btnStep9: TButton;
+    pnlStep9: TPanel;
+    cbStep9: TCheckBox;
+    Label3: TLabel;
+    edGameName: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
-    procedure btnStep2Click(Sender: TObject);
-    procedure btnStep4Click(Sender: TObject);
-    procedure btnStep5Click(Sender: TObject);
-    procedure btnStep6Click(Sender: TObject);
-    procedure btnStep1Click(Sender: TObject);
-    procedure btnBuildPack7zClick(Sender: TObject);
+    procedure btnStepClick(Sender: TObject);
+    procedure btnBuild(Sender: TObject);
   private
     fBuilder: TKMBuilder;
+    fStepCheckBox: array [TKMBuilderStep] of TCheckBox;
     fStepButton: array [TKMBuilderStep] of TButton;
     fStepPanel: array [TKMBuilderStep] of TPanel;
     procedure ControlsEnable(aFlag: Boolean);
@@ -59,27 +76,42 @@ uses
 { TForm1 }
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  fStepPanel[bsStartBuild]  := pnlStep1;
-  fStepPanel[bsCleanSource] := pnlStep2;
-  fStepPanel[bsBuildExe]    := pnlStep3;
-  fStepPanel[bsPatchExe]    := pnlStep4;
-  fStepPanel[bsPackData]    := pnlStep5;
-  fStepPanel[bsCopy]        := pnlStep6;
+  fStepCheckBox[bsStartBuild]     := cbStep1;
+  fStepCheckBox[bsCleanSource]    := cbStep2;
+  fStepCheckBox[bsBuildExe]       := cbStep3;
+  fStepCheckBox[bsPatchExe]       := cbStep4;
+  fStepCheckBox[bsPackData]       := cbStep5;
+  fStepCheckBox[bsCopy]           := cbStep6;
+  fStepCheckBox[bsPack7zip]       := cbStep7;
+  fStepCheckBox[bsPackInstaller]  := cbStep8;
+  fStepCheckBox[bsCommitAndTag]   := cbStep9;
 
-  fStepButton[bsStartBuild]  := btnStep1;
-  fStepButton[bsCleanSource] := btnStep2;
-  fStepButton[bsBuildExe]    := btnStep3;
-  fStepButton[bsPatchExe]    := btnStep4;
-  fStepButton[bsPackData]    := btnStep5;
-  fStepButton[bsCopy]        := btnStep6;
+  fStepButton[bsStartBuild]     := btnStep1;
+  fStepButton[bsCleanSource]    := btnStep2;
+  fStepButton[bsBuildExe]       := btnStep3;
+  fStepButton[bsPatchExe]       := btnStep4;
+  fStepButton[bsPackData]       := btnStep5;
+  fStepButton[bsCopy]           := btnStep6;
+  fStepButton[bsPack7zip]       := btnStep7;
+  fStepButton[bsPackInstaller]  := btnStep8;
+  fStepButton[bsCommitAndTag]   := btnStep9;
+
+  fStepPanel[bsStartBuild]    := pnlStep1;
+  fStepPanel[bsCleanSource]   := pnlStep2;
+  fStepPanel[bsBuildExe]      := pnlStep3;
+  fStepPanel[bsPatchExe]      := pnlStep4;
+  fStepPanel[bsPackData]      := pnlStep5;
+  fStepPanel[bsCopy]          := pnlStep6;
+  fStepPanel[bsPack7zip]      := pnlStep7;
+  fStepPanel[bsPackInstaller] := pnlStep8;
+  fStepPanel[bsCommitAndTag]  := pnlStep9;
 
   for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
   begin
     fStepButton[I].Caption := BuilderStepName[I];
+    fStepButton[I].Tag := Ord(I);
     fStepPanel[I].Color := $808080;
   end;
-
-  fBuilder := TKMBuilder.Create('Alpha 13 wip', HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 end;
 
 
@@ -102,6 +134,9 @@ begin
       Memo1.Lines.Append(Format('>>>--- Done "%s"', [BuilderStepName[aStep]]));
       fStepPanel[aStep].Caption := Format('%dms', [aTimeMsec]);
       fStepPanel[aStep].Color := $80FF80;
+
+      lblBuildRevision.Caption := IntToStr(fBuilder.BuildRevision);
+      lblBuildFolder.Caption := fBuilder.BuildFolder;
     end);
 end;
 
@@ -128,64 +163,38 @@ end;
 
 
 procedure TForm1.ControlsEnable(aFlag: Boolean);
-var
-  I: Integer;
 begin
-  for I := 0 to ControlCount - 1 do
+  for var I := 0 to ControlCount - 1 do
     if (Controls[I] is TButton) and (Controls[I] <> btnStop) then
       Controls[I].Enabled := aFlag;
 end;
 
 
-procedure TForm1.btnBuildPack7zClick(Sender: TObject);
+procedure TForm1.btnBuild(Sender: TObject);
 begin
+  fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+
   ControlsEnable(False);
 
+  var steps: TKMBuilderStepSet;
   for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+  begin
+    if fStepCheckBox[I].Checked then
+      steps := steps + [I];
+
     fStepPanel[I].Color := $808080;
+  end;
 
-  fBuilder.Perform([bsStartBuild, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsCopy]);
+  fBuilder.Perform(steps);
 end;
 
-procedure TForm1.btnStep1Click(Sender: TObject);
+procedure TForm1.btnStepClick(Sender: TObject);
 begin
+  fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+
   ControlsEnable(False);
-  fBuilder.Perform([bsStartBuild]);
-end;
-
-
-procedure TForm1.btnStep2Click(Sender: TObject);
-begin
-  ControlsEnable(False);
-  fBuilder.Perform([bsCleanSource]);
-end;
-
-
-procedure TForm1.btnStep3Click(Sender: TObject);
-begin
-  ControlsEnable(False);
-  fBuilder.Perform([bsBuildExe]);
-end;
-
-
-procedure TForm1.btnStep4Click(Sender: TObject);
-begin
-  ControlsEnable(False);
-  fBuilder.Perform([bsPatchExe]);
-end;
-
-
-procedure TForm1.btnStep5Click(Sender: TObject);
-begin
-  ControlsEnable(False);
-  fBuilder.Perform([bsPackData]);
-end;
-
-
-procedure TForm1.btnStep6Click(Sender: TObject);
-begin
-  ControlsEnable(False);
-  fBuilder.Perform([bsCopy]);
+  var step := TKMBuilderStep(TButton(Sender).Tag);
+  fBuilder.Perform([step]);
 end;
 
 
