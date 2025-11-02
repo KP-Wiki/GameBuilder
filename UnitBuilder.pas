@@ -37,12 +37,19 @@ type
     procedure btnBuildPack7zClick(Sender: TObject);
   private
     fBuilder: TKMBuilder;
+    fStepButton: array [TKMBuilderStep] of TButton;
+    fStepPanel: array [TKMBuilderStep] of TPanel;
     procedure ControlsEnable(aFlag: Boolean);
+    procedure HandleBuilderLog(aText: string);
+    procedure HandleBuilderStepBegin(aStep: TKMBuilderStep);
+    procedure HandleBuilderStepDone(aStep: TKMBuilderStep; aTimeMsec: Integer);
+    procedure HandleBuilderDone;
   end;
 
 
 implementation
 uses
+  Vcl.Graphics,
   KM_Const,
   KromUtils;
 
@@ -57,32 +64,70 @@ begin
 
   ExeDir := ExtractFilePath(Application.ExeName);
 
-  fBuilder := TKMBuilder.Create('Alpha 13 wip',
-    procedure(aText: string)
-    begin
-      TThread.Synchronize(nil,
-        procedure
-        begin
-          Memo1.Lines.Append(aText);
-        end);
-    end,
-    procedure (aStep: TKMBuilderStep; aTimeMsec: Integer)
-    begin
-      TThread.Synchronize(nil,
-        procedure
-        begin
-          case aStep of
-            bsStartBuild:   pnlStep1.Caption := Format('%dms', [aTimeMsec]);
-            bsCleanSource:  pnlStep2.Caption := Format('%dms', [aTimeMsec]);
-            bsBuildExe:     pnlStep3.Caption := Format('%dms', [aTimeMsec]);
-            bsPatchExe:     pnlStep4.Caption := Format('%dms', [aTimeMsec]);
-            bsPackData:     pnlStep5.Caption := Format('%dms', [aTimeMsec]);
-            bsCopy:         pnlStep6.Caption := Format('%dms', [aTimeMsec]);
-          end;
+  fStepPanel[bsStartBuild]  := pnlStep1;
+  fStepPanel[bsCleanSource] := pnlStep2;
+  fStepPanel[bsBuildExe]    := pnlStep3;
+  fStepPanel[bsPatchExe]    := pnlStep4;
+  fStepPanel[bsPackData]    := pnlStep5;
+  fStepPanel[bsCopy]        := pnlStep6;
 
-          ControlsEnable(True);
-          Memo1.Lines.Append('Task done');
-        end);
+  fStepButton[bsStartBuild]  := btnStep1;
+  fStepButton[bsCleanSource] := btnStep2;
+  fStepButton[bsBuildExe]    := btnStep3;
+  fStepButton[bsPatchExe]    := btnStep4;
+  fStepButton[bsPackData]    := btnStep5;
+  fStepButton[bsCopy]        := btnStep6;
+
+  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+  begin
+    fStepButton[I].Caption := BuilderStepName[I];
+    fStepPanel[I].Color := $808080;
+  end;
+
+  fBuilder := TKMBuilder.Create('Alpha 13 wip', HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+end;
+
+
+procedure TForm1.HandleBuilderStepBegin(aStep: TKMBuilderStep);
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      Memo1.Lines.Append(Format('>>>--- Step "%s"', [BuilderStepName[aStep]]));
+      fStepPanel[aStep].Color := $80FFFF;
+    end);
+end;
+
+
+procedure TForm1.HandleBuilderStepDone(aStep: TKMBuilderStep; aTimeMsec: Integer);
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      Memo1.Lines.Append(Format('>>>--- Done "%s"', [BuilderStepName[aStep]]));
+      fStepPanel[aStep].Caption := Format('%dms', [aTimeMsec]);
+      fStepPanel[aStep].Color := $80FF80;
+    end);
+end;
+
+
+procedure TForm1.HandleBuilderDone;
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      ControlsEnable(True);
+      Memo1.Lines.Append('Task done');
+    end);
+end;
+
+
+procedure TForm1.HandleBuilderLog(aText: string);
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      Memo1.Lines.Append(aText);
     end);
 end;
 
@@ -100,6 +145,10 @@ end;
 procedure TForm1.btnBuildPack7zClick(Sender: TObject);
 begin
   ControlsEnable(False);
+
+  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+    fStepPanel[I].Color := $808080;
+
   fBuilder.Perform([bsStartBuild, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsCopy]);
 end;
 
@@ -147,7 +196,7 @@ end;
 
 procedure TForm1.btnStopClick(Sender: TObject);
 begin
-  //"C:\Program Files (x86)\Inno Setup 6\iscc.exe" "installer\InstallerFull.iss"
+  fBuilder.Stop;
 end;
 
 

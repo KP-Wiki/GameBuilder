@@ -145,55 +145,79 @@ object Form1: TForm1
   object pnlStep1: TPanel
     Left = 200
     Top = 120
-    Width = 65
+    Width = 73
     Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
     Caption = '-'
+    Color = clGray
+    ParentBackground = False
     TabOrder = 9
   end
   object pnlStep2: TPanel
     Left = 200
     Top = 152
-    Width = 65
+    Width = 73
     Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
     Caption = '-'
+    Color = clGray
+    ParentBackground = False
     TabOrder = 10
   end
   object pnlStep3: TPanel
     Left = 200
     Top = 184
-    Width = 65
+    Width = 73
     Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
     Caption = '-'
+    Color = clGray
+    ParentBackground = False
     TabOrder = 11
   end
   object pnlStep4: TPanel
     Left = 200
     Top = 216
-    Width = 65
+    Width = 73
     Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
     Caption = '-'
+    Color = clGray
+    ParentBackground = False
     TabOrder = 12
   end
   object pnlStep5: TPanel
     Left = 200
     Top = 248
-    Width = 65
+    Width = 73
     Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
     Caption = '-'
+    Color = clGray
+    ParentBackground = False
     TabOrder = 13
   end
   object pnlStep6: TPanel
     Left = 200
     Top = 280
-    Width = 65
+    Width = 73
     Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
     Caption = '-'
+    Color = clGray
+    ParentBackground = False
     TabOrder = 14
   end
   object btnBuildPack7z: TButton
     Left = 16
     Top = 88
-    Width = 249
+    Width = 257
     Height = 25
     Margins.Left = 2
     Margins.Top = 2

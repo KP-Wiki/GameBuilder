@@ -16,10 +16,23 @@ type
   );
   TKMBuilderStepSet = set of TKMBuilderStep;
 
+const
+  BuilderStepName: array [TKMBuilderStep] of string = (
+    'Start build',
+    'Clean sources',
+    'Build executables',
+    'Patch game executable',
+    'Packing data',
+    'Copy into build folder'
+  );
+
+type
   TKMBuilder = class
   private
     fOnLog: TProc<string>;
-    fOnDone: TProc<TKMBuilderStep, Integer>;
+    fOnStepBegin: TProc<TKMBuilderStep>;
+    fOnStepDone: TProc<TKMBuilderStep, Integer>;
+    fOnDone: TProc;
     fWorker: TThread;
 
     fBuildVersion: string;
@@ -31,6 +44,8 @@ type
     procedure CopyFilesRecursive(const aPathFrom, aPathTo: string; const aFilter: string; aRecursive: Boolean);
     procedure CopyFolder(const aPathFrom, aPathTo: string);
 
+    function CheckTerminated: Boolean;
+
     procedure Step1_GetRevisionCommitAndTag;
     procedure Step2_CleanSource;
     procedure Step3_BuildGameExe;
@@ -38,7 +53,7 @@ type
     procedure Step5_PackData;
     procedure Step6_CopyIntoBuildFolder;
   public
-    constructor Create(const aBuildVersion: string; aOnLog: TProc<string>; aOnDone: TProc<TKMBuilderStep, Integer>);
+    constructor Create(const aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
     procedure Perform(aSteps: TKMBuilderStepSet);
     procedure Stop;
   end;
@@ -49,6 +64,15 @@ uses
   System.IOUtils, System.Masks, System.DateUtils,
   System.StrUtils, System.Generics.Collections,
   KromUtils;
+
+
+function TKMBuilder.CheckTerminated: Boolean;
+begin
+  Result := TThread.CheckTerminated;
+
+  if Result then
+    fOnLog('Terminated');
+end;
 
 
 procedure TKMBuilder.CopyFile(const aPathFrom, aPathTo: string);
@@ -156,12 +180,14 @@ end;
 
 
 { TKMBuilder }
-constructor TKMBuilder.Create(const aBuildVersion: string; aOnLog: TProc<string>; aOnDone: TProc<TKMBuilderStep, Integer>);
+constructor TKMBuilder.Create(const aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
 begin
   inherited Create;
 
 
   fOnLog := aOnLog;
+  fOnStepBegin := aOnStepBegin;
+  fOnStepDone := aOnStepDone;
   fOnDone := aOnDone;
 
   fBuildVersion := aBuildVersion;
@@ -186,13 +212,19 @@ begin
   fBuildRevision := StrToInt(Trim(res)) - 8500;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
+  if CheckTerminated then Exit;
+
   // Write revision number for game exe and launcher/updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
   TFile.WriteAllText('.\version', fBuildVersion + ' r' + IntToStr(fBuildRevision));
 
+  if CheckTerminated then Exit;
+
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
   CreateProcessSimple(cmdCommit, False, True, False);
+
+  if CheckTerminated then Exit;
 
   fOnLog('tag ..');
   var cmdTag := Format('git tag r%d', [fBuildRevision]);
@@ -209,6 +241,8 @@ procedure TKMBuilder.Step2_CleanSource;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
+
+  if CheckTerminated then Exit;
 
   // Delete files
   DeleteRecursive(ExpandFileName('.\'), [
@@ -230,6 +264,8 @@ begin
   if not FileExists('KnightsProvince.exe') then
     fOnLog('KnightsProvince.exe not found');
 
+  if CheckTerminated then Exit;
+
   fOnLog('Building ScriptValidator.exe');
   begin
     var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', ['utils\ScriptValidator\ScriptValidator.dproj']);
@@ -238,6 +274,8 @@ begin
   end;
   if not FileExists('ScriptValidator.exe') then
     fOnLog('ScriptValidator.exe not found');
+
+  if CheckTerminated then Exit;
 
   fOnLog('Building TranslationManager.exe');
   begin
@@ -248,6 +286,8 @@ begin
   if not FileExists('utils\TranslationManager (from kp-wiki)\TranslationManager.exe') then
     fOnLog('TranslationManager.exe not found');
 
+  if CheckTerminated then Exit;
+
   fOnLog('Building KP_DedicatedServer.exe');
   begin
     var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', ['utils\KP_DedicatedServer\KP_DedicatedServer.dproj']);
@@ -257,6 +297,8 @@ begin
   if not FileExists('utils\KP_DedicatedServer\KP_DedicatedServer.exe') then
     fOnLog('KP_DedicatedServer.exe not found');
 
+  if CheckTerminated then Exit;
+
   fOnLog('Building KP_DedicatedServer x86');
   begin
     var s := Format('cmd.exe /C "CALL "C:\fpcupdeluxe\lazarus\lazbuild.exe" -q "%s""', ['utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi']);
@@ -265,6 +307,8 @@ begin
   end;
   if not FileExists('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86') then
     fOnLog('KP_DedicatedServer_Linux_x86 not found');
+
+  if CheckTerminated then Exit;
 
   fOnLog('Building KP_DedicatedServer x64');
   begin
@@ -323,6 +367,8 @@ begin
   CopyFolder('.\mods\', fBuildFolder + 'mods\');
   CopyFolder('.\Win32\', fBuildFolder);
 
+  if CheckTerminated then Exit;
+
   CopyFilesRecursive('.\data\', fBuildFolder + 'data\', '*.libx', True);
   CopyFilesRecursive('.\', fBuildFolder, 'Changelog*.txt', False);
 
@@ -335,6 +381,8 @@ begin
   CopyFile('.\Launcher.exe', fBuildFolder + 'Launcher.exe');
   CopyFile('.\hdiffz.dll', fBuildFolder + 'hdiffz.dll');
   CopyFile('.\version', fBuildFolder + 'version');
+
+  if CheckTerminated then Exit;
 
   CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer.exe', fBuildFolder + 'KP_DedicatedServer.exe');
   CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86', fBuildFolder + 'KP_DedicatedServer_Linux_x86');
@@ -358,6 +406,8 @@ begin
       for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
       if I in theSteps then
       begin
+        fOnStepBegin(I);
+
         var t := GetTickCount;
 
         case I of
@@ -369,8 +419,12 @@ begin
           bsCopy:        Step6_CopyIntoBuildFolder;
         end;
 
-        fOnDone(I, GetTickCount - t);
+        fOnStepDone(I, GetTickCount - t);
+
+        if CheckTerminated then
+          Exit;
       end;
+      fOnDone;
     end);
 
   fWorker.Start;
