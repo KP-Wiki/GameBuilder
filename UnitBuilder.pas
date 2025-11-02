@@ -24,7 +24,7 @@ type
     pnlStep4: TPanel;
     pnlStep5: TPanel;
     pnlStep6: TPanel;
-    btnBuildPack7z: TButton;
+    btnBuildNightly: TButton;
     btnStep7: TButton;
     pnlStep7: TPanel;
     Label1: TLabel;
@@ -46,10 +46,12 @@ type
     cbStep9: TCheckBox;
     Label3: TLabel;
     edGameName: TEdit;
+    btnBuildRelease: TButton;
     procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
-    procedure btnBuild(Sender: TObject);
+    procedure btnBuildNightlyClick(Sender: TObject);
+    procedure btnBuildReleaseClick(Sender: TObject);
   private
     fBuilder: TKMBuilder;
     fStepCheckBox: array [TKMBuilderStep] of TCheckBox;
@@ -81,7 +83,7 @@ begin
   fStepCheckBox[bsBuildExe]       := cbStep3;
   fStepCheckBox[bsPatchExe]       := cbStep4;
   fStepCheckBox[bsPackData]       := cbStep5;
-  fStepCheckBox[bsCopy]           := cbStep6;
+  fStepCheckBox[bsArrangeFolder]  := cbStep6;
   fStepCheckBox[bsPack7zip]       := cbStep7;
   fStepCheckBox[bsPackInstaller]  := cbStep8;
   fStepCheckBox[bsCommitAndTag]   := cbStep9;
@@ -91,7 +93,7 @@ begin
   fStepButton[bsBuildExe]       := btnStep3;
   fStepButton[bsPatchExe]       := btnStep4;
   fStepButton[bsPackData]       := btnStep5;
-  fStepButton[bsCopy]           := btnStep6;
+  fStepButton[bsArrangeFolder]  := btnStep6;
   fStepButton[bsPack7zip]       := btnStep7;
   fStepButton[bsPackInstaller]  := btnStep8;
   fStepButton[bsCommitAndTag]   := btnStep9;
@@ -101,7 +103,7 @@ begin
   fStepPanel[bsBuildExe]      := pnlStep3;
   fStepPanel[bsPatchExe]      := pnlStep4;
   fStepPanel[bsPackData]      := pnlStep5;
-  fStepPanel[bsCopy]          := pnlStep6;
+  fStepPanel[bsArrangeFolder] := pnlStep6;
   fStepPanel[bsPack7zip]      := pnlStep7;
   fStepPanel[bsPackInstaller] := pnlStep8;
   fStepPanel[bsCommitAndTag]  := pnlStep9;
@@ -170,7 +172,7 @@ begin
 end;
 
 
-procedure TForm1.btnBuild(Sender: TObject);
+procedure TForm1.btnBuildNightlyClick(Sender: TObject);
 begin
   fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 
@@ -179,7 +181,25 @@ begin
   var steps: TKMBuilderStepSet;
   for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
   begin
-    if fStepCheckBox[I].Checked then
+    steps := steps + [I];
+
+    fStepPanel[I].Color := $808080;
+  end;
+
+  fBuilder.Perform(steps);
+end;
+
+
+procedure TForm1.btnBuildReleaseClick(Sender: TObject);
+begin
+  fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+
+  ControlsEnable(False);
+
+  var steps: TKMBuilderStepSet;
+  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+  begin
+    if I <> bsPackInstaller then
       steps := steps + [I];
 
     fStepPanel[I].Color := $808080;
@@ -187,6 +207,7 @@ begin
 
   fBuilder.Perform(steps);
 end;
+
 
 procedure TForm1.btnStepClick(Sender: TObject);
 begin

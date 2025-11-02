@@ -16,8 +16,8 @@ object Form1: TForm1
     569)
   TextHeight = 15
   object Label5: TLabel
-    Left = 16
-    Top = 64
+    Left = 200
+    Top = 16
     Width = 91
     Height = 13
     AutoSize = False
@@ -26,7 +26,7 @@ object Form1: TForm1
   end
   object Label1: TLabel
     Left = 16
-    Top = 112
+    Top = 64
     Width = 91
     Height = 13
     AutoSize = False
@@ -35,7 +35,7 @@ object Form1: TForm1
   end
   object Label2: TLabel
     Left = 16
-    Top = 152
+    Top = 104
     Width = 91
     Height = 13
     AutoSize = False
@@ -44,7 +44,7 @@ object Form1: TForm1
   end
   object lblBuildRevision: TLabel
     Left = 24
-    Top = 128
+    Top = 80
     Width = 97
     Height = 25
     AutoSize = False
@@ -59,7 +59,7 @@ object Form1: TForm1
   end
   object lblBuildFolder: TLabel
     Left = 24
-    Top = 168
+    Top = 120
     Width = 353
     Height = 25
     AutoSize = False
@@ -114,8 +114,8 @@ object Form1: TForm1
     OnClick = btnStopClick
   end
   object edBuildVersion: TEdit
-    Left = 16
-    Top = 80
+    Left = 200
+    Top = 32
     Width = 177
     Height = 23
     TabOrder = 2
@@ -145,6 +145,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step2'
     TabOrder = 4
+    OnClick = btnStepClick
   end
   object btnStep3: TButton
     Left = 40
@@ -157,6 +158,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step3'
     TabOrder = 5
+    OnClick = btnStepClick
   end
   object btnStep4: TButton
     Left = 40
@@ -169,6 +171,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step4'
     TabOrder = 6
+    OnClick = btnStepClick
   end
   object btnStep5: TButton
     Left = 40
@@ -181,6 +184,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step5'
     TabOrder = 7
+    OnClick = btnStepClick
   end
   object btnStep6: TButton
     Left = 40
@@ -193,6 +197,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step6'
     TabOrder = 8
+    OnClick = btnStepClick
   end
   object pnlStep1: TPanel
     Left = 232
@@ -266,18 +271,18 @@ object Form1: TForm1
     ParentBackground = False
     TabOrder = 14
   end
-  object btnBuildPack7z: TButton
+  object btnBuildNightly: TButton
     Left = 16
-    Top = 200
+    Top = 168
     Width = 289
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Caption = 'Build pack7z'
+    Caption = 'Build nightly (7z)'
     TabOrder = 15
-    OnClick = btnBuild
+    OnClick = btnBuildNightlyClick
   end
   object btnStep7: TButton
     Left = 40
@@ -290,6 +295,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step7'
     TabOrder = 16
+    OnClick = btnStepClick
   end
   object pnlStep7: TPanel
     Left = 232
@@ -314,6 +320,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step8'
     TabOrder = 18
+    OnClick = btnStepClick
   end
   object pnlStep8: TPanel
     Left = 232
@@ -410,6 +417,7 @@ object Form1: TForm1
     Margins.Bottom = 2
     Caption = 'Step9'
     TabOrder = 28
+    OnClick = btnStepClick
   end
   object pnlStep9: TPanel
     Left = 232
@@ -440,5 +448,18 @@ object Form1: TForm1
     Height = 23
     TabOrder = 31
     Text = 'Knights Province'
+  end
+  object btnBuildRelease: TButton
+    Left = 16
+    Top = 200
+    Width = 289
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
+    Caption = 'Build release (7z + Installer)'
+    TabOrder = 32
+    OnClick = btnBuildReleaseClick
   end
 end

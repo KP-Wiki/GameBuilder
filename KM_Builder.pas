@@ -12,7 +12,7 @@ type
     bsBuildExe,
     bsPatchExe,
     bsPackData,
-    bsCopy,
+    bsArrangeFolder,
     bsPack7zip,
     bsPackInstaller,
     bsCommitAndTag
@@ -25,8 +25,8 @@ const
     'Clean sources',
     'Build executables',
     'Patch game executable',
-    'Packing data',
-    'Copy into build folder',
+    'Pack data',
+    'Arrange build folder',
     'Pack 7-zip',
     'Pack installer',
     'Commit and Tag'
@@ -53,12 +53,12 @@ type
 
     function CheckTerminated: Boolean;
 
-    procedure Step1_GetRevisionCommitAndTag;
+    procedure Step1_GetRevision;
     procedure Step2_CleanSource;
     procedure Step3_BuildGameExe;
     procedure Step4_PatchGameExe;
     procedure Step5_PackData;
-    procedure Step6_CopyIntoBuildFolder;
+    procedure Step6_ArrangeFolder;
     procedure Step7_Pack7zip;
     procedure Step8_PackInstaller;
     procedure Step9_CommitAndTag;
@@ -217,7 +217,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step1_GetRevisionCommitAndTag;
+procedure TKMBuilder.Step1_GetRevision;
 begin
   fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
@@ -358,7 +358,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step6_CopyIntoBuildFolder;
+procedure TKMBuilder.Step6_ArrangeFolder;
 begin
   ForceDirectories('.\' + fBuildFolder);
 
@@ -475,12 +475,12 @@ begin
         var t := GetTickCount;
 
         case I of
-          bsStartBuild:     Step1_GetRevisionCommitAndTag;
+          bsStartBuild:     Step1_GetRevision;
           bsCleanSource:    Step2_CleanSource;
           bsBuildExe:       Step3_BuildGameExe;
           bsPatchExe:       Step4_PatchGameExe;
           bsPackData:       Step5_PackData;
-          bsCopy:           Step6_CopyIntoBuildFolder;
+          bsArrangeFolder: Step6_ArrangeFolder;
           bsPack7zip:       Step7_Pack7zip;
           bsPackInstaller:  Step8_PackInstaller;
           bsCommitAndTag:   Step9_CommitAndTag;
