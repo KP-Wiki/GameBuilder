@@ -48,6 +48,7 @@ type
     fBuildRevision: Integer;
     fBuildFolder: string;
 
+    procedure DeleteFileIfExists(const aFilename: string);
     procedure DeleteRecursive(const aPath: string; const aFilters: array of string; aAvoid: array of string);
     procedure CopyFile(const aPathFrom, aPathTo: string);
     procedure CopyFilesRecursive(const aPathFrom, aPathTo: string; const aFilter: string; aRecursive: Boolean);
@@ -171,6 +172,17 @@ begin
 end;
 
 
+procedure TKMBuilder.DeleteFileIfExists(const aFilename: string);
+begin
+  if FileExists(aFilename) then
+  begin
+    fOnLog('Deleting ' + aFilename);
+
+    if not DeleteFile(aFilename) then
+      raise Exception.Create(Format('Failed to delete "%s". Is it locked by something?', [aFilename]));
+  end;
+end;
+
 procedure TKMBuilder.DeleteRecursive(const aPath: string; const aFilters: array of string; aAvoid: array of string);
   procedure Internal(const aPath: string; const aFilters: array of string; aAvoid: array of string; var aCount: Integer);
   var
@@ -272,11 +284,7 @@ end;
 procedure TKMBuilder.Step3_BuildGameExe;
   procedure BuildWin(const aProject, aExe: string);
   begin
-    if FileExists(aExe) then
-    begin
-      fOnLog('Deleting old ' + aExe);
-      DeleteFile(aExe);
-    end;
+    DeleteFileIfExists(aExe);
 
     fOnLog('Building ' + aExe);
     begin
@@ -289,11 +297,7 @@ procedure TKMBuilder.Step3_BuildGameExe;
   end;
   procedure BuildFpc(const aProject, aExe: string);
   begin
-    if FileExists(aExe) then
-    begin
-      fOnLog('Deleting old ' + aExe);
-      DeleteFile(aExe);
-    end;
+    DeleteFileIfExists(aExe);
 
     var fpcFilename := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
     CheckFileExists('FPCUpDeluxe', fpcFilename);
@@ -354,7 +358,7 @@ begin
   fOnLog(Format('Size after patch - %d bytes', [exeSizeAfter]));
 
   if exeSizeAfter <= exeSizeBefore then
-    raise Exception.Create('Patching produced smaller exe?');
+    raise Exception.Create('Patching failed?');
 end;
 
 
@@ -362,6 +366,8 @@ procedure TKMBuilder.Step5_PackData;
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
+
+  DeleteFileIfExists('data.pack');
 
   fOnLog('Packing data.pack');
   begin
@@ -425,7 +431,7 @@ begin
   var sevenZipResult := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
 
   // Delete old archive if we had it for some reason
-  DeleteFile(sevenZipResult);
+  DeleteFileIfExists(sevenZipResult);
 
   var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [sevenZipFilename, sevenZipResult, fBuildFolder]);
   var res := CaptureConsoleOutput('.\', cmd7zip);
@@ -448,7 +454,7 @@ begin
   var installerNameExe := installerName + '.exe';
 
   // Delete old installer if we had it for some reason
-  DeleteFile(installerNameExe);
+  DeleteFileIfExists(installerNameExe);
 
   var sl := TStringList.Create;
   sl.Append('; REVISION (write into Registry)');
