@@ -9,13 +9,19 @@ type
   TKMBuilderStep = (
     bsPrerequirements,
     bsStartBuild,
+    //todo: Patch source (with ScriptingParser)
     bsCleanSource,
     bsBuildExe,
+    //todo: We could build TestGame and check its output
     bsPatchExe,
+    //todo: We could update changelog too now
     bsPackData,
     bsArrangeFolder,
     bsPack7zip,
     bsPackInstaller,
+    //todo: Create archive with servers
+    //todo: Create patch (with Launcher)
+    //todo: Register version on KT (with KT_Admin)
     bsCommitAndTag
   );
   TKMBuilderStepSet = set of TKMBuilderStep;
