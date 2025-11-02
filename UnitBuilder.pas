@@ -211,7 +211,8 @@ end;
 
 procedure TForm1.btnStepClick(Sender: TObject);
 begin
-  fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  if not Assigned(fBuilder) then
+    fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 
   ControlsEnable(False);
   var step := TKMBuilderStep(TButton(Sender).Tag);

@@ -408,10 +408,12 @@ end;
 
 procedure TKMBuilder.Step8_PackInstaller;
 begin
-  var installerExeName := Format('%s (%s r%d) Installer.exe', [fGameName, fBuildVersion, fBuildRevision]);
+  var appName := Format('%s (%s r%d)', [fGameName, fBuildVersion, fBuildRevision]);
+  var installerName := appName + ' Installer';
+  var installerNameExe := installerName + '.exe';
 
   // Delete old installer if we had it for some reason
-  DeleteFile(installerExeName);
+  DeleteFile(installerNameExe);
 
   var sl := TStringList.Create;
   sl.Append('; REVISION (write into Registry)');
@@ -421,10 +423,10 @@ begin
   sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [ExcludeTrailingPathDelimiter(fBuildFolder)]));
   sl.Append('');
   sl.Append('; How the installer executable will be named');
-  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [ChangeFileExt(installerExeName, '')]));
+  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [installerName]));
   sl.Append('');
   sl.Append('; Application name used in many places');
-  sl.Append(Format('#define MyAppName '#39'%s r%d'#39, [fBuildVersion, fBuildRevision]));
+  sl.Append(Format('#define MyAppName '#39'%s'#39, [appName]));
   sl.Append('');
   sl.Append(Format('#define MyAppExeName '#39'%s'#39, ['KnightsProvince.exe']));
   sl.Append(Format('#define Website '#39'%s'#39, ['http://www.knightsprovince.com/']));
@@ -438,8 +440,8 @@ begin
   var res := CaptureConsoleOutput('.\', cmdInstaller);
   fOnLog(res);
 
-  var szAfter := TFile.GetSize(installerExeName);
-  fOnLog(Format('Size of "%s" - %d bytes', [installerExeName, szAfter]));
+  var szAfter := TFile.GetSize(installerNameExe);
+  fOnLog(Format('Size of "%s" - %d bytes', [installerNameExe, szAfter]));
 end;
 
 
