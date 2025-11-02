@@ -47,6 +47,9 @@ type
     Label3: TLabel;
     edGameName: TEdit;
     btnBuildRelease: TButton;
+    btnStep0: TButton;
+    pnlStep0: TPanel;
+    cbStep0: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
@@ -78,6 +81,7 @@ uses
 { TForm1 }
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  fStepCheckBox[bsPrerequirements]     := cbStep0;
   fStepCheckBox[bsStartBuild]     := cbStep1;
   fStepCheckBox[bsCleanSource]    := cbStep2;
   fStepCheckBox[bsBuildExe]       := cbStep3;
@@ -88,6 +92,7 @@ begin
   fStepCheckBox[bsPackInstaller]  := cbStep8;
   fStepCheckBox[bsCommitAndTag]   := cbStep9;
 
+  fStepButton[bsPrerequirements]     := btnStep0;
   fStepButton[bsStartBuild]     := btnStep1;
   fStepButton[bsCleanSource]    := btnStep2;
   fStepButton[bsBuildExe]       := btnStep3;
@@ -98,6 +103,7 @@ begin
   fStepButton[bsPackInstaller]  := btnStep8;
   fStepButton[bsCommitAndTag]   := btnStep9;
 
+  fStepPanel[bsPrerequirements]    := pnlStep0;
   fStepPanel[bsStartBuild]    := pnlStep1;
   fStepPanel[bsCleanSource]   := pnlStep2;
   fStepPanel[bsBuildExe]      := pnlStep3;

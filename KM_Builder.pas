@@ -7,6 +7,7 @@ uses
 
 type
   TKMBuilderStep = (
+    bsPrerequirements,
     bsStartBuild,
     bsCleanSource,
     bsBuildExe,
@@ -21,6 +22,7 @@ type
 
 const
   BuilderStepName: array [TKMBuilderStep] of string = (
+    'Prerequirements',
     'Start build',
     'Clean sources',
     'Build executables',
@@ -51,8 +53,10 @@ type
     procedure CopyFilesRecursive(const aPathFrom, aPathTo: string; const aFilter: string; aRecursive: Boolean);
     procedure CopyFolder(const aPathFrom, aPathTo: string);
 
+    procedure CheckFileExists(const aAppName, aFilename: string);
     function CheckTerminated: Boolean;
 
+    procedure Step0_Prerequirements;
     procedure Step1_GetRevision;
     procedure Step2_CleanSource;
     procedure Step3_BuildGameExe;
@@ -92,6 +96,14 @@ begin
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
+end;
+
+
+procedure TKMBuilder.CheckFileExists(const aAppName, aFilename: string);
+begin
+  // Check that file is available at given path
+  if not FileExists(aFilename) then
+    raise Exception.Create(Format('%s not found at "%s"', [aAppName, aFilename]));
 end;
 
 
@@ -217,12 +229,17 @@ begin
 end;
 
 
+procedure TKMBuilder.Step0_Prerequirements;
+begin
+  CheckFileExists('Main project file', 'KnightsProvince.dproj');
+end;
+
+
 procedure TKMBuilder.Step1_GetRevision;
 begin
   fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
-  fOnLog(res);
   fBuildRevision := StrToInt(Trim(res)) - 8500;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
@@ -234,7 +251,6 @@ begin
 
   var dtNow := Now;
   fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fBuildVersion, fBuildRevision]);
-
   fOnLog(Format('BuildFolder - "%s"', [fBuildFolder]));
 end;
 
@@ -249,77 +265,70 @@ begin
   // Delete files
   DeleteRecursive(ExpandFileName('.\'), [
     '*.~*', '*.ddp', '*.drc', '*.dcp', '*.dcu', '*.dsk', '*.o', '*.or', '*.ppu', '*.compiled', '*.local', '*.tmp', '*.log',
-    'thumbd.db', 'descript.ion', 'bugreport.txt', '*.skincfg', '*.identcache', '*.tvsconfig', '*.mi', '*.log.txt', '*.stat', '*.bak'], ['.git']);
+    'thumbs.db', 'descript.ion', 'bugreport.txt', '*.skincfg', '*.identcache', '*.tvsconfig', '*.mi', '*.log.txt', '*.stat', '*.bak'], ['.git']);
 end;
 
 
 procedure TKMBuilder.Step3_BuildGameExe;
+  procedure BuildWin(const aProject, aExe: string);
+  begin
+    if FileExists(aExe) then
+    begin
+      fOnLog('Deleting old ' + aExe);
+      DeleteFile(aExe);
+    end;
+
+    fOnLog('Building ' + aExe);
+    begin
+      var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aProject]);
+      var s2 := CaptureConsoleOutput('.\', s);
+      fOnLog(s2);
+    end;
+
+    CheckFileExists('Resulting Windows exe', aExe);
+  end;
+  procedure BuildFpc(const aProject, aExe: string);
+  begin
+    if FileExists(aExe) then
+    begin
+      fOnLog('Deleting old ' + aExe);
+      DeleteFile(aExe);
+    end;
+
+    var fpcFilename := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
+    CheckFileExists('FPCUpDeluxe', fpcFilename);
+
+    fOnLog('Building ' + aExe);
+    begin
+      var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [fpcFilename, aProject]);
+      var res := CaptureConsoleOutput('.\', cmdFpc);
+      fOnLog(res);
+    end;
+
+    CheckFileExists('Resulting Linux binary', aExe);
+  end;
 begin
-  // Delete previously built exes
-
-  fOnLog('Building KnightsProvince.exe');
-  begin
-    var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', ['KnightsProvince.dproj']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
-  end;
-  if not FileExists('KnightsProvince.exe') then
-    fOnLog('KnightsProvince.exe not found');
+  BuildWin('KnightsProvince.dproj', 'KnightsProvince.exe');
 
   if CheckTerminated then Exit;
 
-  fOnLog('Building ScriptValidator.exe');
-  begin
-    var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', ['utils\ScriptValidator\ScriptValidator.dproj']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
-  end;
-  if not FileExists('ScriptValidator.exe') then
-    fOnLog('ScriptValidator.exe not found');
+  BuildWin('utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  fOnLog('Building TranslationManager.exe');
-  begin
-    var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', ['utils\TranslationManager (from kp-wiki)\TranslationManager.dproj']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
-  end;
-  if not FileExists('utils\TranslationManager (from kp-wiki)\TranslationManager.exe') then
-    fOnLog('TranslationManager.exe not found');
+  BuildWin('utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
-  fOnLog('Building KP_DedicatedServer.exe');
-  begin
-    var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', ['utils\KP_DedicatedServer\KP_DedicatedServer.dproj']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
-  end;
-  if not FileExists('utils\KP_DedicatedServer\KP_DedicatedServer.exe') then
-    fOnLog('KP_DedicatedServer.exe not found');
+  BuildWin('utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  fOnLog('Building KP_DedicatedServer x86');
-  begin
-    var s := Format('cmd.exe /C "CALL "C:\fpcupdeluxe\lazarus\lazbuild.exe" -q "%s""', ['utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
-  end;
-  if not FileExists('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86') then
-    fOnLog('KP_DedicatedServer_Linux_x86 not found');
+  BuildFpc('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
 
   if CheckTerminated then Exit;
 
-  fOnLog('Building KP_DedicatedServer x64');
-  begin
-    var s := Format('cmd.exe /C "CALL "C:\fpcupdeluxe\lazarus\lazbuild.exe" -q "%s""', ['utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
-  end;
-  if not FileExists('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64') then
-    fOnLog('KP_DedicatedServer_Linux_x64 not found');
+  BuildFpc('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
 end;
 
 
@@ -330,31 +339,44 @@ begin
 
   fOnLog('Patching KnightsProvince.exe');
   begin
-    var s := Format('cmd.exe /C ""C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe" "%s""', ['KnightsProvince.exe']);
+    var madExceptFilename := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
+    CheckFileExists('madExcept', madExceptFilename);
+
+    var s := Format('cmd.exe /C ""%s" "%s""', [madExceptFilename, 'KnightsProvince.exe']);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
-  if not FileExists('KnightsProvince.exe') then
-    fOnLog('KnightsProvince.exe not found');
+
+  // Check that patching went well and file is still there
+  CheckFileExists('Game exe', 'KnightsProvince.exe');
 
   var exeSizeAfter := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size after patch - %d bytes', [exeSizeAfter]));
+
+  if exeSizeAfter <= exeSizeBefore then
+    raise Exception.Create('Patching produced smaller exe?');
 end;
 
 
 procedure TKMBuilder.Step5_PackData;
 begin
+  var dataPackerFilename := 'DataPacker.exe';
+  CheckFileExists('DataPacker', dataPackerFilename);
+
   fOnLog('Packing data.pack');
   begin
-    var s := Format('cmd.exe /C "CALL DataPacker.exe %s"', ['pack']);
-    var s2 := CaptureConsoleOutput('.\', s);
-    fOnLog(s2);
+    var cmdDataPacker := Format('cmd.exe /C "CALL "%s" %s"', [dataPackerFilename, 'pack']);
+    var res := CaptureConsoleOutput('.\', cmdDataPacker);
+    fOnLog(res);
   end;
-  if not FileExists('data.pack') then
-    fOnLog('data.pack not found');
+
+  CheckFileExists('Resulting data.pack', 'data.pack');
 
   var szAfter := TFile.GetSize('data.pack');
   fOnLog(Format('Size of data.pack - %d bytes', [szAfter]));
+
+  if szAfter <= 0 then
+    raise Exception.Create('Data.pack size is too small?');
 end;
 
 
@@ -397,12 +419,25 @@ end;
 
 procedure TKMBuilder.Step7_Pack7zip;
 begin
-  var cmd7zip := Format('"C:\Program Files\7-Zip\7z.exe" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s.7z" "%s"', [ExcludeTrailingPathDelimiter(fBuildFolder), fBuildFolder]);
+  var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
+  CheckFileExists('7-zip', sevenZipFilename);
+
+  var sevenZipResult := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
+
+  // Delete old archive if we had it for some reason
+  DeleteFile(sevenZipResult);
+
+  var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [sevenZipFilename, sevenZipResult, fBuildFolder]);
   var res := CaptureConsoleOutput('.\', cmd7zip);
   fOnLog(res);
 
-  var szAfter := TFile.GetSize(fBuildFolder + '.7z');
-  fOnLog(Format('Size of data.pack - %d bytes', [szAfter]));
+  CheckFileExists('Resulting 7z archive', sevenZipResult);
+
+  var szAfter := TFile.GetSize(sevenZipResult);
+  fOnLog(Format('Size of 7z - %d bytes', [szAfter]));
+
+  if szAfter <= 0 then
+    raise Exception.Create('Resulting 7z archive is too small?');
 end;
 
 
@@ -436,12 +471,17 @@ begin
 
   if CheckTerminated then Exit;
 
-  var cmdInstaller := Format('"C:\Program Files (x86)\Inno Setup 6\iscc.exe" ".\installer\InstallerFull.iss"', []);
+  var innoFilename := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
+  CheckFileExists('InnoSetup', innoFilename);
+  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [innoFilename]);
   var res := CaptureConsoleOutput('.\', cmdInstaller);
   fOnLog(res);
 
   var szAfter := TFile.GetSize(installerNameExe);
   fOnLog(Format('Size of "%s" - %d bytes', [installerNameExe, szAfter]));
+
+  if szAfter <= 0 then
+    raise Exception.Create('Resulting installer is too small?');
 end;
 
 
@@ -469,31 +509,37 @@ begin
   fWorker := TThread.CreateAnonymousThread(
     procedure
     begin
-      for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
-      if I in theSteps then
-      begin
-        fOnStepBegin(I);
+      try
+        for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+        if I in theSteps then
+        begin
+          fOnStepBegin(I);
 
-        var t := GetTickCount;
+          var t := GetTickCount;
 
-        case I of
-          bsStartBuild:     Step1_GetRevision;
-          bsCleanSource:    Step2_CleanSource;
-          bsBuildExe:       Step3_BuildGameExe;
-          bsPatchExe:       Step4_PatchGameExe;
-          bsPackData:       Step5_PackData;
-          bsArrangeFolder: Step6_ArrangeFolder;
-          bsPack7zip:       Step7_Pack7zip;
-          bsPackInstaller:  Step8_PackInstaller;
-          bsCommitAndTag:   Step9_CommitAndTag;
+          case I of
+            bsPrerequirements:  Step0_Prerequirements;
+            bsStartBuild:       Step1_GetRevision;
+            bsCleanSource:      Step2_CleanSource;
+            bsBuildExe:         Step3_BuildGameExe;
+            bsPatchExe:         Step4_PatchGameExe;
+            bsPackData:         Step5_PackData;
+            bsArrangeFolder:    Step6_ArrangeFolder;
+            bsPack7zip:         Step7_Pack7zip;
+            bsPackInstaller:    Step8_PackInstaller;
+            bsCommitAndTag:     Step9_CommitAndTag;
+          end;
+
+          fOnStepDone(I, GetTickCount - t);
+
+          if CheckTerminated then
+            Exit;
         end;
-
-        fOnStepDone(I, GetTickCount - t);
-
-        if CheckTerminated then
-          Exit;
+        fOnDone;
+      except
+        on E: Exception do
+          fOnLog('ERROR: ' + E.Message);
       end;
-      fOnDone;
     end);
 
   fWorker.Start;

@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Game Builder'
-  ClientHeight = 569
+  ClientHeight = 585
   ClientWidth = 945
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     945
-    569)
+    585)
   TextHeight = 15
   object Label5: TLabel
     Left = 200
@@ -85,7 +85,7 @@ object Form1: TForm1
     Left = 384
     Top = 16
     Width = 545
-    Height = 537
+    Height = 553
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -102,7 +102,7 @@ object Form1: TForm1
   end
   object btnStop: TButton
     Left = 16
-    Top = 520
+    Top = 544
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -123,7 +123,7 @@ object Form1: TForm1
   end
   object btnStep1: TButton
     Left = 40
-    Top = 232
+    Top = 256
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -136,7 +136,7 @@ object Form1: TForm1
   end
   object btnStep2: TButton
     Left = 40
-    Top = 264
+    Top = 288
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -149,7 +149,7 @@ object Form1: TForm1
   end
   object btnStep3: TButton
     Left = 40
-    Top = 296
+    Top = 320
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -162,7 +162,7 @@ object Form1: TForm1
   end
   object btnStep4: TButton
     Left = 40
-    Top = 328
+    Top = 352
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -175,7 +175,7 @@ object Form1: TForm1
   end
   object btnStep5: TButton
     Left = 40
-    Top = 360
+    Top = 384
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -188,7 +188,7 @@ object Form1: TForm1
   end
   object btnStep6: TButton
     Left = 40
-    Top = 392
+    Top = 416
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -201,7 +201,7 @@ object Form1: TForm1
   end
   object pnlStep1: TPanel
     Left = 232
-    Top = 232
+    Top = 256
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -213,7 +213,7 @@ object Form1: TForm1
   end
   object pnlStep2: TPanel
     Left = 232
-    Top = 264
+    Top = 288
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -225,7 +225,7 @@ object Form1: TForm1
   end
   object pnlStep3: TPanel
     Left = 232
-    Top = 296
+    Top = 320
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -237,7 +237,7 @@ object Form1: TForm1
   end
   object pnlStep4: TPanel
     Left = 232
-    Top = 328
+    Top = 352
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -249,7 +249,7 @@ object Form1: TForm1
   end
   object pnlStep5: TPanel
     Left = 232
-    Top = 360
+    Top = 384
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -261,7 +261,7 @@ object Form1: TForm1
   end
   object pnlStep6: TPanel
     Left = 232
-    Top = 392
+    Top = 416
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -273,7 +273,7 @@ object Form1: TForm1
   end
   object btnBuildNightly: TButton
     Left = 16
-    Top = 168
+    Top = 160
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -286,7 +286,7 @@ object Form1: TForm1
   end
   object btnStep7: TButton
     Left = 40
-    Top = 424
+    Top = 448
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -299,7 +299,7 @@ object Form1: TForm1
   end
   object pnlStep7: TPanel
     Left = 232
-    Top = 424
+    Top = 448
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -311,7 +311,7 @@ object Form1: TForm1
   end
   object btnStep8: TButton
     Left = 40
-    Top = 456
+    Top = 480
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -324,7 +324,7 @@ object Form1: TForm1
   end
   object pnlStep8: TPanel
     Left = 232
-    Top = 456
+    Top = 480
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -336,7 +336,7 @@ object Form1: TForm1
   end
   object cbStep1: TCheckBox
     Left = 16
-    Top = 232
+    Top = 256
     Width = 17
     Height = 25
     Checked = True
@@ -345,7 +345,7 @@ object Form1: TForm1
   end
   object cbStep2: TCheckBox
     Left = 16
-    Top = 264
+    Top = 288
     Width = 17
     Height = 25
     Checked = True
@@ -354,7 +354,7 @@ object Form1: TForm1
   end
   object cbStep3: TCheckBox
     Left = 16
-    Top = 296
+    Top = 320
     Width = 17
     Height = 25
     Checked = True
@@ -363,7 +363,7 @@ object Form1: TForm1
   end
   object cbStep4: TCheckBox
     Left = 16
-    Top = 328
+    Top = 352
     Width = 17
     Height = 25
     Checked = True
@@ -372,7 +372,7 @@ object Form1: TForm1
   end
   object cbStep5: TCheckBox
     Left = 16
-    Top = 360
+    Top = 384
     Width = 17
     Height = 25
     Checked = True
@@ -381,7 +381,7 @@ object Form1: TForm1
   end
   object cbStep6: TCheckBox
     Left = 16
-    Top = 392
+    Top = 416
     Width = 17
     Height = 25
     Checked = True
@@ -390,7 +390,7 @@ object Form1: TForm1
   end
   object cbStep7: TCheckBox
     Left = 16
-    Top = 424
+    Top = 448
     Width = 17
     Height = 25
     Checked = True
@@ -399,7 +399,7 @@ object Form1: TForm1
   end
   object cbStep8: TCheckBox
     Left = 16
-    Top = 456
+    Top = 480
     Width = 17
     Height = 25
     Checked = True
@@ -408,7 +408,7 @@ object Form1: TForm1
   end
   object btnStep9: TButton
     Left = 40
-    Top = 488
+    Top = 512
     Width = 185
     Height = 25
     Margins.Left = 2
@@ -421,7 +421,7 @@ object Form1: TForm1
   end
   object pnlStep9: TPanel
     Left = 232
-    Top = 488
+    Top = 512
     Width = 73
     Height = 25
     BevelKind = bkFlat
@@ -433,7 +433,7 @@ object Form1: TForm1
   end
   object cbStep9: TCheckBox
     Left = 16
-    Top = 488
+    Top = 512
     Width = 17
     Height = 25
     Caption = 'Step8'
@@ -451,7 +451,7 @@ object Form1: TForm1
   end
   object btnBuildRelease: TButton
     Left = 16
-    Top = 200
+    Top = 192
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -461,5 +461,39 @@ object Form1: TForm1
     Caption = 'Build release (7z + Installer)'
     TabOrder = 32
     OnClick = btnBuildReleaseClick
+  end
+  object btnStep0: TButton
+    Left = 40
+    Top = 224
+    Width = 185
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
+    Caption = 'Step1'
+    TabOrder = 33
+    OnClick = btnStepClick
+  end
+  object pnlStep0: TPanel
+    Left = 232
+    Top = 224
+    Width = 73
+    Height = 25
+    BevelKind = bkFlat
+    BevelOuter = bvNone
+    Caption = '-'
+    Color = clGray
+    ParentBackground = False
+    TabOrder = 34
+  end
+  object cbStep0: TCheckBox
+    Left = 16
+    Top = 224
+    Width = 17
+    Height = 25
+    Checked = True
+    State = cbChecked
+    TabOrder = 35
   end
 end
