@@ -3,7 +3,6 @@ unit UnitBuilder;
 interface
 uses
   Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, System.Classes,
-  System.SysUtils,
   KM_Builder, Vcl.ExtCtrls;
 
 
@@ -49,8 +48,8 @@ type
 
 implementation
 uses
+  System.SysUtils,
   Vcl.Graphics,
-  KM_Const,
   KromUtils;
 
 
@@ -60,10 +59,6 @@ uses
 { TForm1 }
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  Caption := GAME_TITLE + ' - Builder (' + GAME_REVISION + ')';
-
-  ExeDir := ExtractFilePath(Application.ExeName);
-
   fStepPanel[bsStartBuild]  := pnlStep1;
   fStepPanel[bsCleanSource] := pnlStep2;
   fStepPanel[bsBuildExe]    := pnlStep3;

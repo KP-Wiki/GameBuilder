@@ -99,7 +99,7 @@ procedure TKMBuilder.CopyFilesRecursive(const aPathFrom, aPathTo, aFilter: strin
         if (SearchRec.Attr and faDirectory) <> 0 then
         begin
           if aRecursive then
-            Internal(aPathFrom + SearchRec.Name + '\', aPathTo + SearchRec.Name + '\', aFilter, aRecursive, aCount)
+            Internal(aPathFrom + SearchRec.Name + '\', aPathTo + SearchRec.Name + '\', aFilter, aRecursive, aCount);
         end else
         begin
           if MatchesMask(SearchRec.Name, aFilter) then

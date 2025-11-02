@@ -51,7 +51,6 @@
         <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
         <DCC_Optimize>false</DCC_Optimize>
         <DCC_RangeChecking>true</DCC_RangeChecking>
-        <DCC_UnitSearchPath>..\..\;..\..\src;..\..\src\ai;..\..\src\3rdparty;..\..\src\3rdparty\Overbyte ICS 8;..\..\src\3rdparty\pascalscript;..\..\src\3rdparty\RecastNavigationDelphi;..\..\src\catalog;..\..\src\common;..\..\src\controls;..\..\src\ext_ai;..\..\src\footprints;..\..\src\gip;..\..\src\gui;..\..\src\gui\game;..\..\src\gui\kt;..\..\src\gui\maped;..\..\src\gui\maped\menu;..\..\src\gui\maped\mission;..\..\src\gui\maped\player;..\..\src\gui\maped\terrain;..\..\src\gui\maped\town;..\..\src\gui\menu;..\..\src\gui\mp;..\..\src\lib;..\..\src\mission_script;..\..\src\hands;..\..\src\houses;..\..\src\io;..\..\src\maped;..\..\src\net;..\..\src\render_core;..\..\src\render_game;..\..\src\render_gui;..\..\src\render_terrain;..\..\src\perflog;..\..\src\res;..\..\src\res\spec;..\..\src\scripting;..\..\src\sound;..\..\src\terrain;..\..\src\terrain_nav;..\..\src\stockpiles;..\..\src\units;..\..\src\units\actions;..\..\src\units\tasks;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_UsePackage>bindcompfmx;fmx;rtl;dbrtl;IndySystem;DbxClientDriver;bindcomp;inetdb;DBXInterBaseDriver;DataSnapCommon;DataSnapClient;DataSnapServer;DataSnapProviderClient;xmlrtl;DbxCommonDriver;IndyProtocols;DBXMySQLDriver;dbxcds;bindengine;soaprtl;DBXOracleDriver;dsnap;DBXInformixDriver;IndyCore;fmxase;DBXFirebirdDriver;inet;fmxobj;inetdbxpress;DBXSybaseASADriver;fmxdae;dbexpress;DataSnapIndy10ServerTransport;IPIndyImpl;$(DCC_UsePackage)</DCC_UsePackage>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
@@ -100,6 +99,7 @@
         <DCCReference Include="UnitBuilder.pas">
             <Form>Form1</Form>
         </DCCReference>
+        <DCCReference Include="common\KromUtils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
