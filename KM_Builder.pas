@@ -7,29 +7,27 @@ uses
 
 type
   TKMBuilderStep = (
-    bsPrerequirements,
-    bsStartBuild,
-    //todo: Patch source (with ScriptingParser)
+    bsInitialize,
+    //todo: We could patch source (with ScriptingParser)
+    //todo: We could update Wiki (with ScriptingParser)
     bsCleanSource,
     bsBuildExe,
     //todo: We could build TestGame and check its output
     bsPatchExe,
-    //todo: We could update changelog too now
     bsPackData,
     bsArrangeFolder,
     bsPack7zip,
     bsPackInstaller,
-    //todo: Create archive with servers
+    //todo: We could create archive with servers
     bsCreatePatch,
-    //todo: Register version on KT (with KT_Admin)
+    //todo: We could register version on KT (with KT_Admin)
     bsCommitAndTag
   );
   TKMBuilderStepSet = set of TKMBuilderStep;
 
 const
   BuilderStepName: array [TKMBuilderStep] of string = (
-    'Prerequirements',
-    'Start build',
+    'Initialize',
     'Clean sources',
     'Build executables',
     'Patch game executable',
@@ -43,16 +41,19 @@ const
 
 type
   TKMBuilderConfiguration = (
-    bcNone,
     bcNightly,
     bcRelease
   );
 
 const
+  BuilderConfigName: array [TKMBuilderConfiguration] of string = (
+    'Nightly build (7z)',
+    'Full build (7z + installer)'
+  );
+
   STEPS_OF_CONFIG: array [TKMBuilderConfiguration] of TKMBuilderStepSet = (
-    ([]),
-    ([bsPrerequirements, bsStartBuild, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsCommitAndTag]),
-    ([bsPrerequirements, bsStartBuild, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsCommitAndTag])
+    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsCommitAndTag]),
+    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsCommitAndTag])
   );
 
 type
@@ -79,8 +80,7 @@ type
     procedure CheckFileExists(const aAppName, aFilename: string);
     function CheckTerminated: Boolean;
 
-    procedure Step0_Prerequirements;
-    procedure Step1_GetRevision;
+    procedure Step1_Initialize;
     procedure Step2_CleanSource;
     procedure Step3_BuildGameExe;
     procedure Step4_PatchGameExe;
@@ -97,6 +97,7 @@ type
 
     property BuildRevision: Integer read fBuildRevision;
     property BuildFolder: string read fBuildFolder;
+    property BuildResult7zip: string read fBuildResult7zip;
   end;
 
 
@@ -264,14 +265,10 @@ begin
 end;
 
 
-procedure TKMBuilder.Step0_Prerequirements;
+procedure TKMBuilder.Step1_Initialize;
 begin
   CheckFileExists('Main project file', 'KnightsProvince.dproj');
-end;
 
-
-procedure TKMBuilder.Step1_GetRevision;
-begin
   fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
@@ -411,6 +408,12 @@ end;
 
 procedure TKMBuilder.Step6_ArrangeFolder;
 begin
+  if DirectoryExists('.\' + fBuildFolder) then
+  begin
+    fOnLog(Format('Deleting old build folder of "%s"', [fBuildFolder]));
+    TDirectory.Delete('.\' + fBuildFolder, True);
+  end;
+
   ForceDirectories('.\' + fBuildFolder);
 
   CopyFolder('.\campaigns\', fBuildFolder + 'campaigns\');
@@ -482,7 +485,7 @@ begin
   sl.Append(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
   sl.Append('');
   sl.Append('; Folder from where files get taken');
-  sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [ExcludeTrailingPathDelimiter(fBuildFolder)]));
+  sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [fBuildFolder]));
   sl.Append('');
   sl.Append('; How the installer executable will be named');
   sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [installerName]));
@@ -557,8 +560,7 @@ begin
           var t := GetTickCount;
 
           case I of
-            bsPrerequirements:  Step0_Prerequirements;
-            bsStartBuild:       Step1_GetRevision;
+            bsInitialize:       Step1_Initialize;
             bsCleanSource:      Step2_CleanSource;
             bsBuildExe:         Step3_BuildGameExe;
             bsPatchExe:         Step4_PatchGameExe;
