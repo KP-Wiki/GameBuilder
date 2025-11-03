@@ -20,7 +20,7 @@ type
     bsPack7zip,
     bsPackInstaller,
     //todo: Create archive with servers
-    //todo: Create patch (with Launcher)
+    bsCreatePatch,
     //todo: Register version on KT (with KT_Admin)
     bsCommitAndTag
   );
@@ -37,7 +37,22 @@ const
     'Arrange build folder',
     'Pack 7-zip',
     'Pack installer',
+    'Create patch',
     'Commit and Tag'
+  );
+
+type
+  TKMBuilderConfiguration = (
+    bcNone,
+    bcNightly,
+    bcRelease
+  );
+
+const
+  STEPS_OF_CONFIG: array [TKMBuilderConfiguration] of TKMBuilderStepSet = (
+    ([]),
+    ([bsPrerequirements, bsStartBuild, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsCommitAndTag]),
+    ([bsPrerequirements, bsStartBuild, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsCommitAndTag])
   );
 
 type
@@ -53,6 +68,7 @@ type
     fBuildVersion: string;
     fBuildRevision: Integer;
     fBuildFolder: string;
+    fBuildResult7zip: string;
 
     procedure DeleteFileIfExists(const aFilename: string);
     procedure DeleteRecursive(const aPath: string; const aFilters: array of string; aAvoid: array of string);
@@ -72,7 +88,8 @@ type
     procedure Step6_ArrangeFolder;
     procedure Step7_Pack7zip;
     procedure Step8_PackInstaller;
-    procedure Step9_CommitAndTag;
+    procedure Step9_CreatePatch;
+    procedure Step10_CommitAndTag;
   public
     constructor Create(const aGameName, aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
     procedure Perform(aSteps: TKMBuilderStepSet);
@@ -269,7 +286,7 @@ begin
 
   var dtNow := Now;
   fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fBuildVersion, fBuildRevision]);
-  fOnLog(Format('BuildFolder - "%s"', [fBuildFolder]));
+  fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
 end;
 
 
@@ -434,18 +451,16 @@ begin
   var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
   CheckFileExists('7-zip', sevenZipFilename);
 
-  var sevenZipResult := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
-
   // Delete old archive if we had it for some reason
-  DeleteFileIfExists(sevenZipResult);
+  DeleteFileIfExists(fBuildResult7zip);
 
-  var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [sevenZipFilename, sevenZipResult, fBuildFolder]);
+  var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [sevenZipFilename, fBuildResult7zip, fBuildFolder]);
   var res := CaptureConsoleOutput('.\', cmd7zip);
   fOnLog(res);
 
-  CheckFileExists('Resulting 7z archive', sevenZipResult);
+  CheckFileExists('Resulting 7z archive', fBuildResult7zip);
 
-  var szAfter := TFile.GetSize(sevenZipResult);
+  var szAfter := TFile.GetSize(fBuildResult7zip);
   fOnLog(Format('Size of 7z - %d bytes', [szAfter]));
 
   if szAfter <= 0 then
@@ -497,7 +512,19 @@ begin
 end;
 
 
-procedure TKMBuilder.Step9_CommitAndTag;
+procedure TKMBuilder.Step9_CreatePatch;
+begin
+  var launcherFilename := ExpandFileName('.\Launcher.exe');
+  var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
+  CheckFileExists('Launcher', launcherFilename);
+  CheckFileExists('7-zip package', result7zipFilename);
+
+  var cmdPatch := Format('%s "%s"', [launcherFilename, result7zipFilename]);
+  CreateProcessSimple(cmdPatch, False, True, False);
+end;
+
+
+procedure TKMBuilder.Step10_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
@@ -539,7 +566,8 @@ begin
             bsArrangeFolder:    Step6_ArrangeFolder;
             bsPack7zip:         Step7_Pack7zip;
             bsPackInstaller:    Step8_PackInstaller;
-            bsCommitAndTag:     Step9_CommitAndTag;
+            bsCreatePatch:      Step9_CreatePatch;
+            bsCommitAndTag:     Step10_CommitAndTag;
           end;
 
           fOnStepDone(I, GetTickCount - t);

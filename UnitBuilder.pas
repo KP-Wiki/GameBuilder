@@ -24,7 +24,7 @@ type
     pnlStep4: TPanel;
     pnlStep5: TPanel;
     pnlStep6: TPanel;
-    btnBuildNightly: TButton;
+    btnBuild1: TButton;
     btnStep7: TButton;
     pnlStep7: TPanel;
     Label1: TLabel;
@@ -46,15 +46,19 @@ type
     cbStep9: TCheckBox;
     Label3: TLabel;
     edGameName: TEdit;
-    btnBuildRelease: TButton;
+    btnBuild2: TButton;
     btnStep0: TButton;
     pnlStep0: TPanel;
     cbStep0: TCheckBox;
+    btnStep10: TButton;
+    pnlStep10: TPanel;
+    cbStep10: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
-    procedure btnBuildNightlyClick(Sender: TObject);
-    procedure btnBuildReleaseClick(Sender: TObject);
+    procedure btnBuildClick(Sender: TObject);
+    procedure btnBuildMouseEnter(Sender: TObject);
+    procedure btnBuildMouseLeave(Sender: TObject);
   private
     fBuilder: TKMBuilder;
     fStepCheckBox: array [TKMBuilderStep] of TCheckBox;
@@ -65,6 +69,7 @@ type
     procedure HandleBuilderStepBegin(aStep: TKMBuilderStep);
     procedure HandleBuilderStepDone(aStep: TKMBuilderStep; aTimeMsec: Integer);
     procedure HandleBuilderDone;
+    procedure UpdateCheckboxes(aConfig: TKMBuilderConfiguration);
   end;
 
 
@@ -90,7 +95,8 @@ begin
   fStepCheckBox[bsArrangeFolder]  := cbStep6;
   fStepCheckBox[bsPack7zip]       := cbStep7;
   fStepCheckBox[bsPackInstaller]  := cbStep8;
-  fStepCheckBox[bsCommitAndTag]   := cbStep9;
+  fStepCheckBox[bsCreatePatch]    := cbStep9;
+  fStepCheckBox[bsCommitAndTag]   := cbStep10;
 
   fStepButton[bsPrerequirements]     := btnStep0;
   fStepButton[bsStartBuild]     := btnStep1;
@@ -101,7 +107,8 @@ begin
   fStepButton[bsArrangeFolder]  := btnStep6;
   fStepButton[bsPack7zip]       := btnStep7;
   fStepButton[bsPackInstaller]  := btnStep8;
-  fStepButton[bsCommitAndTag]   := btnStep9;
+  fStepButton[bsCreatePatch]    := btnStep9;
+  fStepButton[bsCommitAndTag]   := btnStep10;
 
   fStepPanel[bsPrerequirements]    := pnlStep0;
   fStepPanel[bsStartBuild]    := pnlStep1;
@@ -112,7 +119,8 @@ begin
   fStepPanel[bsArrangeFolder] := pnlStep6;
   fStepPanel[bsPack7zip]      := pnlStep7;
   fStepPanel[bsPackInstaller] := pnlStep8;
-  fStepPanel[bsCommitAndTag]  := pnlStep9;
+  fStepPanel[bsCreatePatch]   := pnlStep9;
+  fStepPanel[bsCommitAndTag]  := pnlStep10;
 
   for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
   begin
@@ -149,6 +157,13 @@ begin
 end;
 
 
+procedure TForm1.UpdateCheckboxes(aConfig: TKMBuilderConfiguration);
+begin
+  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+    fStepCheckBox[I].Checked := I in STEPS_OF_CONFIG[aConfig];
+end;
+
+
 procedure TForm1.HandleBuilderDone;
 begin
   TThread.Synchronize(nil,
@@ -178,25 +193,22 @@ begin
 end;
 
 
-procedure TForm1.btnBuildNightlyClick(Sender: TObject);
+procedure TForm1.btnBuildMouseEnter(Sender: TObject);
 begin
-  fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
-
-  ControlsEnable(False);
-
-  var steps: TKMBuilderStepSet;
-  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
-  begin
-    steps := steps + [I];
-
-    fStepPanel[I].Color := $808080;
-  end;
-
-  fBuilder.Perform(steps);
+  // Highlight checkboxes steps that will be executed
+  var buildConfig := TKMBuilderConfiguration(TButton(Sender).Tag);
+  UpdateCheckboxes(buildConfig);
 end;
 
 
-procedure TForm1.btnBuildReleaseClick(Sender: TObject);
+procedure TForm1.btnBuildMouseLeave(Sender: TObject);
+begin
+  // Highlight nothing
+  UpdateCheckboxes(bcNone);
+end;
+
+
+procedure TForm1.btnBuildClick(Sender: TObject);
 begin
   fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 
@@ -205,7 +217,7 @@ begin
   var steps: TKMBuilderStepSet;
   for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
   begin
-    if I <> bsPackInstaller then
+    if fStepCheckBox[I].Checked then
       steps := steps + [I];
 
     fStepPanel[I].Color := $808080;
