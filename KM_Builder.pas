@@ -12,15 +12,15 @@ type
     //todo: We could update Wiki (with ScriptingParser)
     bsCleanSource,
     bsBuildExe,
-    //todo: We could build TestGame and check its output
     bsPatchExe,
     bsPackData,
+    //todo: We could build TestGame and check its output
     bsArrangeFolder,
     bsPack7zip,
     bsPackInstaller,
-    //todo: We could create archive with servers
+    //todo: We could create small archive with dedicated servers
     bsCreatePatch,
-    //todo: We could register version on KT (with KT_Admin)
+    bsRegisterOnKT, //todo: We could register version on KT (with KT_Admin)
     bsCommitAndTag
   );
   TKMBuilderStepSet = set of TKMBuilderStep;
@@ -36,6 +36,7 @@ const
     'Pack 7-zip',
     'Pack installer',
     'Create patch',
+    'Register on KT',
     'Commit and Tag'
   );
 
@@ -52,8 +53,8 @@ const
   );
 
   STEPS_OF_CONFIG: array [TKMBuilderConfiguration] of TKMBuilderStepSet = (
-    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsCommitAndTag]),
-    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsCommitAndTag])
+    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsRegisterOnKT, bsCommitAndTag]),
+    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsRegisterOnKT, bsCommitAndTag])
   );
 
 type
@@ -89,7 +90,8 @@ type
     procedure Step7_Pack7zip;
     procedure Step8_PackInstaller;
     procedure Step9_CreatePatch;
-    procedure Step10_CommitAndTag;
+    procedure Step10_RegisterOnKT;
+    procedure Step11_CommitAndTag;
   public
     constructor Create(const aGameName, aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
     procedure Perform(aSteps: TKMBuilderStepSet);
@@ -522,12 +524,34 @@ begin
   CheckFileExists('Launcher', launcherFilename);
   CheckFileExists('7-zip package', result7zipFilename);
 
+  // Example: .\Launcher.exe ".\kp2025-10-29 (Alpha 13 wip r17455).7z"
   var cmdPatch := Format('%s "%s"', [launcherFilename, result7zipFilename]);
   CreateProcessSimple(cmdPatch, False, True, False);
 end;
 
 
-procedure TKMBuilder.Step10_CommitAndTag;
+procedure TKMBuilder.Step10_RegisterOnKT;
+begin
+  Exit; // Not ready yet
+
+  var ktAuthFilename := '..\KnightsTavern\SECRET_auth.bat';
+  var ktAdminFilename := '.\KT_Admin.exe';
+  CheckFileExists('KT Admin', ktAdminFilename);
+
+//  // Example: cmd.exe /c "..\KnightsTavern\SECRET_auth.bat"
+//  var cmdAuth := Format('cmd.exe /c "%s"', [ktAuthFilename]);
+//  CreateProcessSimple(cmdAuth, False, False, False);
+
+  // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13
+  var cmdKtAdmin := Format('"%s" register "%s" %d', [ktAdminFilename, BuildFolder, 13]);
+  CreateProcessSimple(cmdKtAdmin, True, True, False);
+
+//  var cmdAuthEnd := 'taskkill /im putty.exe /f';
+//  CreateProcessSimple(cmdAuthEnd, False, False, False);
+end;
+
+
+procedure TKMBuilder.Step11_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
@@ -569,7 +593,8 @@ begin
             bsPack7zip:         Step7_Pack7zip;
             bsPackInstaller:    Step8_PackInstaller;
             bsCreatePatch:      Step9_CreatePatch;
-            bsCommitAndTag:     Step10_CommitAndTag;
+            bsRegisterOnKT:      Step10_RegisterOnKT;
+            bsCommitAndTag:     Step11_CommitAndTag;
           end;
 
           fOnStepDone(I, GetTickCount - t);

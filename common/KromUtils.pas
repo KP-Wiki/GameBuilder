@@ -17,24 +17,29 @@ var
   StartupInfo: TStartupInfo;
   ProcessInfo: TProcessInformation;
   res: Cardinal;
+  CmdLine: array[0..255] of WideChar;
 begin
+  // We need strings to be modifiable, since CreateProcessW plays "dirty" and crashes otherwise
+  // Hence we have to make local copy
+  StringToWideChar(aFilename, CmdLine, Length(CmdLine));
+
   FillChar(StartupInfo, Sizeof(StartupInfo), #0);
   StartupInfo.cb := Sizeof(StartupInfo);
   StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
   StartupInfo.wShowWindow := IfThen(aShowWindow, SW_SHOWDEFAULT, SW_HIDE);
 
-  CreateProcess(
+  if not CreateProcess(
     nil,
-    PWideChar(aFileName),
+    CmdLine,
     nil,
     nil,
     False,
-    CREATE_NEW_CONSOLE or
-    NORMAL_PRIORITY_CLASS or (BELOW_NORMAL_PRIORITY_CLASS * Ord(aLowPriority)),
+    CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS or (BELOW_NORMAL_PRIORITY_CLASS * Ord(aLowPriority)),
     nil,
     nil,
     StartupInfo,
-    ProcessInfo);
+    ProcessInfo) then
+    RaiseLastOSError;
 
   Result := ProcessInfo.hProcess;
 
