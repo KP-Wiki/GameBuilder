@@ -190,7 +190,7 @@ begin
   ControlsEnable(False);
 
   var buildConfig := TKMBuilderConfiguration(TButton(Sender).Tag);
-  var steps: TKMBuilderStepSet;
+  var steps: TKMBuilderStepSet := [];
   for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
   begin
     if I in STEPS_OF_CONFIG[buildConfig] then
