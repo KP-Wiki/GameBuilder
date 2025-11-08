@@ -542,8 +542,8 @@ begin
 //  var cmdAuth := Format('cmd.exe /c "%s"', [ktAuthFilename]);
 //  CreateProcessSimple(cmdAuth, False, False, False);
 
-  // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13
-  var cmdKtAdmin := Format('"%s" register "%s" %d', [ktAdminFilename, BuildFolder, 13]);
+  // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
+  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, BuildFolder, 13, fBuildRevision]);
   CreateProcessSimple(cmdKtAdmin, True, True, False);
 
 //  var cmdAuthEnd := 'taskkill /im putty.exe /f';
