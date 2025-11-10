@@ -81,15 +81,15 @@ type
     procedure CheckFileExists(const aAppName, aFilename: string);
     function CheckTerminated: Boolean;
 
-    procedure Step1_Initialize;
-    procedure Step2_CleanSource;
-    procedure Step3_BuildGameExe;
-    procedure Step4_PatchGameExe;
-    procedure Step5_PackData;
-    procedure Step6_ArrangeFolder;
-    procedure Step7_Pack7zip;
-    procedure Step8_PackInstaller;
-    procedure Step9_CreatePatch;
+    procedure Step01_Initialize;
+    procedure Step02_CleanSource;
+    procedure Step03_BuildGameExe;
+    procedure Step04_PatchGameExe;
+    procedure Step05_PackData;
+    procedure Step06_ArrangeFolder;
+    procedure Step07_Pack7zip;
+    procedure Step08_PackInstaller;
+    procedure Step09_CreatePatch;
     procedure Step10_RegisterOnKT;
     procedure Step11_CommitAndTag;
   public
@@ -267,7 +267,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step1_Initialize;
+procedure TKMBuilder.Step01_Initialize;
 begin
   CheckFileExists('Main project file', 'KnightsProvince.dproj');
 
@@ -289,7 +289,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step2_CleanSource;
+procedure TKMBuilder.Step02_CleanSource;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
@@ -303,7 +303,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step3_BuildGameExe;
+procedure TKMBuilder.Step03_BuildGameExe;
   procedure BuildWin(const aProject, aExe: string);
   begin
     DeleteFileIfExists(aExe);
@@ -358,7 +358,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step4_PatchGameExe;
+procedure TKMBuilder.Step04_PatchGameExe;
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -384,7 +384,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step5_PackData;
+procedure TKMBuilder.Step05_PackData;
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -408,7 +408,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step6_ArrangeFolder;
+procedure TKMBuilder.Step06_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -451,7 +451,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step7_Pack7zip;
+procedure TKMBuilder.Step07_Pack7zip;
 begin
   var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
   CheckFileExists('7-zip', sevenZipFilename);
@@ -473,7 +473,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step8_PackInstaller;
+procedure TKMBuilder.Step08_PackInstaller;
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fBuildVersion, fBuildRevision]);
   var installerName := appName + ' Installer';
@@ -517,7 +517,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step9_CreatePatch;
+procedure TKMBuilder.Step09_CreatePatch;
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -532,22 +532,12 @@ end;
 
 procedure TKMBuilder.Step10_RegisterOnKT;
 begin
-  Exit; // Not ready yet
-
-  var ktAuthFilename := '..\KnightsTavern\SECRET_auth.bat';
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
-
-//  // Example: cmd.exe /c "..\KnightsTavern\SECRET_auth.bat"
-//  var cmdAuth := Format('cmd.exe /c "%s"', [ktAuthFilename]);
-//  CreateProcessSimple(cmdAuth, False, False, False);
 
   // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
   var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, BuildFolder, 13, fBuildRevision]);
   CreateProcessSimple(cmdKtAdmin, True, True, False);
-
-//  var cmdAuthEnd := 'taskkill /im putty.exe /f';
-//  CreateProcessSimple(cmdAuthEnd, False, False, False);
 end;
 
 
@@ -584,15 +574,15 @@ begin
           var t := GetTickCount;
 
           case I of
-            bsInitialize:       Step1_Initialize;
-            bsCleanSource:      Step2_CleanSource;
-            bsBuildExe:         Step3_BuildGameExe;
-            bsPatchExe:         Step4_PatchGameExe;
-            bsPackData:         Step5_PackData;
-            bsArrangeFolder:    Step6_ArrangeFolder;
-            bsPack7zip:         Step7_Pack7zip;
-            bsPackInstaller:    Step8_PackInstaller;
-            bsCreatePatch:      Step9_CreatePatch;
+            bsInitialize:       Step01_Initialize;
+            bsCleanSource:      Step02_CleanSource;
+            bsBuildExe:         Step03_BuildGameExe;
+            bsPatchExe:         Step04_PatchGameExe;
+            bsPackData:         Step05_PackData;
+            bsArrangeFolder:    Step06_ArrangeFolder;
+            bsPack7zip:         Step07_Pack7zip;
+            bsPackInstaller:    Step08_PackInstaller;
+            bsCreatePatch:      Step09_CreatePatch;
             bsRegisterOnKT:     Step10_RegisterOnKT;
             bsCommitAndTag:     Step11_CommitAndTag;
           end;
