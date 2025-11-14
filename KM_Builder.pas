@@ -53,8 +53,8 @@ const
   );
 
   STEPS_OF_CONFIG: array [TKMBuilderConfiguration] of TKMBuilderStepSet = (
-    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, {bsRegisterOnKT,} bsCommitAndTag]),
-    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, {bsRegisterOnKT,} bsCommitAndTag])
+    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsRegisterOnKT, bsCommitAndTag]),
+    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsRegisterOnKT, bsCommitAndTag])
   );
 
 type
