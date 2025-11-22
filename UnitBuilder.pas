@@ -3,7 +3,7 @@ unit UnitBuilder;
 interface
 uses
   Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, System.Classes,
-  KM_Builder, Vcl.ExtCtrls;
+  KM_BuilderKP, Vcl.ExtCtrls;
 
 
 type

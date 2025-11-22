@@ -95,10 +95,10 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="KM_Builder.pas"/>
         <DCCReference Include="UnitBuilder.pas">
             <Form>Form1</Form>
         </DCCReference>
+        <DCCReference Include="KM_BuilderKP.pas"/>
         <DCCReference Include="common\KromUtils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

@@ -2,7 +2,7 @@ program Builder;
 uses
   Vcl.Forms,
   UnitBuilder in 'UnitBuilder.pas' {Form1},
-  KM_Builder in 'KM_Builder.pas',
+  KM_BuilderKP in 'KM_BuilderKP.pas',
   KromUtils in 'common\KromUtils.pas';
 
 {$R *.res}

@@ -1,4 +1,4 @@
-unit KM_Builder;
+unit KM_BuilderKP;
 {$I ..\..\KM_CompilerDirectives.inc}
 interface
 uses
