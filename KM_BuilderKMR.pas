@@ -10,21 +10,26 @@ type
   TKMBuilderKMR = class(TKMBuilder)
   private
     fGameName: string;
-    fBuildVersion: string;
+    fGameVersion: string;
+
+    fPrivateRepoPath: string;
+    fResourcesRepoPath: string;
+    fPandocPath: string;
+
     fBuildRevision: Integer;
     fBuildFolder: string;
-    fBuildResult7zip: string;
+    fBuildResultInstaller: string;
 
-    procedure Step00_Initialize;
-    procedure Step01_CleanSource;
-    procedure Step02_BuildGameExe;
-    procedure Step03_PatchGameExe;
-    procedure Step04_PackData;
-    procedure Step05_ArrangeFolder;
-    procedure Step06_Pack7zip;
-    procedure Step07_PackInstaller;
-    procedure Step08_CreatePatch;
-    procedure Step09_RegisterOnKT;
+    procedure Step00_CheckRepositories;
+    procedure Step01_Initialize;
+    procedure Step02_CopyNetAuthSecure;
+    procedure Step03_CleanSource;
+    procedure Step04_GenerateDocs;
+    procedure Step05_BuildGameExe;
+    procedure Step06_PatchGameExe;
+    procedure Step07_PackData;
+    procedure Step08_ArrangeFolder;
+    procedure Step09_PackInstaller;
     procedure Step10_CommitAndTag;
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
@@ -45,50 +50,94 @@ begin
   inherited;
 
   fGameName := 'KaM Remake';
-  fBuildVersion := 'Beta';
+  fGameVersion := 'Beta';
+
+  fPrivateRepoPath:= '..\kam_remake_private.rey\';
+  fResourcesRepoPath := '..\kam_remake.rey.resources\';
+  fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
-  fBuildResult7zip := '<no filename>';
+  fBuildResultInstaller := '<no filename>';
 
-  fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step00_Initialize));
-  fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step01_CleanSource));
-  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step02_BuildGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step03_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step04_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step05_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step06_Pack7zip));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step07_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step08_CreatePatch));
-  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step09_RegisterOnKT));
+  fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
+  fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
+  fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step02_CopyNetAuthSecure));
+  fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step03_CleanSource));
+  fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step04_GenerateDocs));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step05_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step06_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step07_PackData));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step08_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step09_PackInstaller));
   fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step10_CommitAndTag));
 
-  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',           [0,1,2,3,4,5,6,  8,9,10]));
-  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)',  [0,1,2,3,4,5,6,7,8,9,10]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Installer)',  [0,1,2,3,4,5,6,7,8,9,10]));
 end;
 
 
 function TKMBuilderKMR.GetInfo: string;
 begin
   var sb := TStringBuilder.Create;
-  sb.AppendLine(Format('Game name: %s', [fGameName]));
-  sb.AppendLine(Format('Version:   %s', [fBuildVersion]));
-  sb.AppendLine(Format('Revision:  r%d', [fBuildRevision]));
-  sb.AppendLine(Format('Folder:    %s', [fBuildFolder]));
-  sb.AppendLine(Format('Archive:   %s', [fBuildResult7zip]));
+  sb.AppendLine(Format('Game name:      %s', [fGameName]));
+  sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
+  sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
+  sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
+  sb.AppendLine(Format('Pandoc:         %s', [fPandocPath]));
+  sb.AppendLine('');
+  sb.AppendLine(Format('Revision:       r%d', [fBuildRevision]));
+  sb.AppendLine(Format('Folder:         %s', [fBuildFolder]));
+  sb.AppendLine(Format('Installer:      %s', [fBuildResultInstaller]));
   Result := sb.ToString;
   sb.Free;
 end;
 
 
-procedure TKMBuilderKMR.Step00_Initialize;
+procedure TKMBuilderKMR.Step00_CheckRepositories;
+begin
+  fOnLog('Update submodules ..');
+  var cmdSubmoduleUpdate := 'git submodule update --init --recursive --remote --progress';
+  var resSubmoduleUpdate := CaptureConsoleOutput('.\', cmdSubmoduleUpdate);
+  fOnLog(resSubmoduleUpdate);
+  fOnLog('Update submodules done' + sLineBreak);
+
+  fOnLog('Checkout master ..');
+  var cmdMasterCheckuot := 'git checkout master';
+  var resMasterCheckout := CaptureConsoleOutput('.\', cmdMasterCheckuot);
+  fOnLog(resMasterCheckout);
+  fOnLog('Checkout master done' + sLineBreak);
+
+  fOnLog('Pull master ..');
+  var cmdMasterPull := 'git pull';
+  var resMasterPull := CaptureConsoleOutput('.\', cmdMasterPull);
+  fOnLog(resMasterPull);
+  fOnLog('Pull master done' + sLineBreak);
+
+  fOnLog('Pull private ..');
+  var cmdPrivatePull := 'git pull';
+  var resPrivatePull := CaptureConsoleOutput(fPrivateRepoPath, cmdPrivatePull);
+  fOnLog(resPrivatePull);
+  fOnLog('Pull private done' + sLineBreak);
+
+  fOnLog('Pull resources ..');
+  var cmdResourcesPull := 'git pull';
+  var resResourcesPull := CaptureConsoleOutput(fResourcesRepoPath, cmdResourcesPull);
+  fOnLog(resResourcesPull);
+  fOnLog('Pull resources done' + sLineBreak);
+end;
+
+
+procedure TKMBuilderKMR.Step01_Initialize;
 begin
   CheckFileExists('Main project file', 'KaM_Remake.dproj');
 
   fOnLog('rev-list ..');
+  // Get revision number from git
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
-  fBuildRevision := StrToInt(Trim(res));
+
+  // We increment revision number by 1, as we are going to make one more commit for KM_Revision.inc
+  fBuildRevision := StrToInt(Trim(res)) + 1;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
   if CheckTerminated then Exit;
@@ -96,13 +145,32 @@ begin
   // Write revision number for game exe
   TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM=' + IntToStr(fBuildRevision));
 
-  var dtNow := Now;
-  fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fBuildVersion, fBuildRevision]);
-  fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
+  fBuildFolder := Format('%s %s r%d\', [fGameName, fGameVersion, fBuildRevision]);
+  fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + '.exe';
 end;
 
 
-procedure TKMBuilderKMR.Step01_CleanSource;
+procedure TKMBuilderKMR.Step02_CopyNetAuthSecure;
+begin
+  var nsaSource := fPrivateRepoPath + 'src\net\KM_NetAuthSecure.pas';
+  var nsaDest := '.\src\net\KM_NetAuthSecure.pas';
+
+  var szSource := TFile.GetSize(nsaSource);
+  var szDest := TFile.GetSize(nsaDest);
+
+  if szSource = szDest then
+    raise Exception.Create('KM_NetAuthSecure is already there?');
+
+  fOnLog(Format('Size of old - %d bytes', [szDest]));
+  DeleteFileIfExists(nsaDest);
+
+  CopyFile(nsaSource, nsaDest);
+  szDest := TFile.GetSize(nsaDest);
+  fOnLog(Format('Size of new - %d bytes', [szDest]));
+end;
+
+
+procedure TKMBuilderKMR.Step03_CleanSource;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
@@ -116,7 +184,25 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step02_BuildGameExe;
+procedure TKMBuilderKMR.Step04_GenerateDocs;
+const
+  LANG: array [0..3] of string = ('eng', 'ger', 'pol', 'rus');
+begin
+  CheckFileExists('Pandoc', fPandocPath);
+
+  fOnLog('Generating docs ..');
+  for var I := Low(LANG) to High(LANG) do
+  begin
+    //todo: Folder structure should be simplified
+    var cmd := Format('%s -s -f markdown .\Docs\Readme\getting-started_%s.md -o .\Docs\Readme\Readme_%s.html --metadata-file=".\Docs\Readme\Readme\metadata_%s.yml"', [fPandocPath, LANG[I], LANG[I], LANG[I]]);
+    var res := CaptureConsoleOutput('.\', cmd);
+    fOnLog(res);
+  end;
+  fOnLog('Generating docs done' + sLineBreak);
+end;
+
+
+procedure TKMBuilderKMR.Step05_BuildGameExe;
   procedure BuildWin(const aProject, aExe: string);
   begin
     DeleteFileIfExists(aExe);
@@ -171,7 +257,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step03_PatchGameExe;
+procedure TKMBuilderKMR.Step06_PatchGameExe;
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -197,7 +283,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step04_PackData;
+procedure TKMBuilderKMR.Step07_PackData;
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -221,7 +307,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step05_ArrangeFolder;
+procedure TKMBuilderKMR.Step08_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -264,36 +350,12 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step06_Pack7zip;
+procedure TKMBuilderKMR.Step09_PackInstaller;
 begin
-  var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
-  CheckFileExists('7-zip', sevenZipFilename);
-
-  // Delete old archive if we had it for some reason
-  DeleteFileIfExists(fBuildResult7zip);
-
-  var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [sevenZipFilename, fBuildResult7zip, fBuildFolder]);
-  var res := CaptureConsoleOutput('.\', cmd7zip);
-  fOnLog(res);
-
-  CheckFileExists('Resulting 7z archive', fBuildResult7zip);
-
-  var szAfter := TFile.GetSize(fBuildResult7zip);
-  fOnLog(Format('Size of 7z - %d bytes', [szAfter]));
-
-  if szAfter <= 0 then
-    raise Exception.Create('Resulting 7z archive is too small?');
-end;
-
-
-procedure TKMBuilderKMR.Step07_PackInstaller;
-begin
-  var appName := Format('%s (%s r%d)', [fGameName, fBuildVersion, fBuildRevision]);
-  var installerName := appName + ' Installer';
-  var installerNameExe := installerName + '.exe';
+  var installerName := ChangeFileExt(fBuildResultInstaller, '');
 
   // Delete old installer if we had it for some reason
-  DeleteFileIfExists(installerNameExe);
+  DeleteFileIfExists(fBuildResultInstaller);
 
   var sl := TStringList.Create;
   sl.Append('; REVISION (write into Registry)');
@@ -306,7 +368,7 @@ begin
   sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [installerName]));
   sl.Append('');
   sl.Append('; Application name used in many places');
-  sl.Append(Format('#define MyAppName '#39'%s'#39, [appName]));
+  sl.Append(Format('#define MyAppName '#39'%s'#39, [installerName]));
   sl.Append('');
   sl.Append(Format('#define MyAppExeName '#39'%s'#39, ['KnightsProvince.exe']));
   sl.Append(Format('#define Website '#39'%s'#39, ['http://www.knightsprovince.com/']));
@@ -322,35 +384,11 @@ begin
   var res := CaptureConsoleOutput('.\', cmdInstaller);
   fOnLog(res);
 
-  var szAfter := TFile.GetSize(installerNameExe);
-  fOnLog(Format('Size of "%s" - %d bytes', [installerNameExe, szAfter]));
+  var szAfter := TFile.GetSize(fBuildResultInstaller);
+  fOnLog(Format('Size of "%s" - %d bytes', [fBuildResultInstaller, szAfter]));
 
   if szAfter <= 0 then
     raise Exception.Create('Resulting installer is too small?');
-end;
-
-
-procedure TKMBuilderKMR.Step08_CreatePatch;
-begin
-  var launcherFilename := ExpandFileName('.\Launcher.exe');
-  var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
-  CheckFileExists('Launcher', launcherFilename);
-  CheckFileExists('7-zip package', result7zipFilename);
-
-  // Example: .\Launcher.exe ".\kp2025-10-29 (Alpha 13 wip r17455).7z"
-  var cmdPatch := Format('%s "%s"', [launcherFilename, result7zipFilename]);
-  CreateProcessSimple(cmdPatch, False, True, False);
-end;
-
-
-procedure TKMBuilderKMR.Step09_RegisterOnKT;
-begin
-  var ktAdminFilename := '.\KT_Admin.exe';
-  CheckFileExists('KT Admin', ktAdminFilename);
-
-  // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
-  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, fBuildFolder, 13, fBuildRevision]);
-  CreateProcessSimple(cmdKtAdmin, True, True, False);
 end;
 
 
