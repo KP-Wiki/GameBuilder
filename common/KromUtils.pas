@@ -90,50 +90,49 @@ begin
   saSecurity.bInheritHandle := True;
   saSecurity.lpSecurityDescriptor := nil;
 
-  if CreatePipe(hRead, hWrite, @saSecurity, 0) then
-  begin
+  if not CreatePipe(hRead, hWrite, @saSecurity, 0) then
+    RaiseLastOSError;
+
+  suiStartup := default(TStartupInfo);
+  suiStartup.cb := SizeOf(TStartupInfo);
+  suiStartup.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
+  suiStartup.hStdOutput := hWrite;
+  suiStartup.hStdError := hWrite;
+  suiStartup.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+  suiStartup.wShowWindow := SW_SHOW;//SW_HIDE;
+
+  piProcess := default(TProcessInformation);
+
+  try
+    if not CreateProcessW(nil, PWideChar(thisString), @saSecurity, @saSecurity, True, CREATE_NEW_PROCESS_GROUP or NORMAL_PRIORITY_CLASS,
+      nil, IfThen(thisFolder <> '', PWideChar(thisFolder), nil), suiStartup, piProcess) then
+      RaiseLastOSError;
+
+    // Freezes without the pause ..
+    Sleep(100);
+    CloseHandle(hWrite);
+
     try
-      FillChar(suiStartup, SizeOf(TStartupInfo), #0);
-      suiStartup.cb := SizeOf(TStartupInfo);
-      suiStartup.hStdInput := hRead;
-      suiStartup.hStdOutput := hWrite;
-      suiStartup.hStdError := hWrite;
-      suiStartup.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-      suiStartup.wShowWindow := SW_HIDE;
+      repeat
+        dRunning := WaitForSingleObject(piProcess.hProcess, 100);
 
-      if CreateProcessW(nil, PWideChar(thisString), @saSecurity, @saSecurity, True,
-        CREATE_NEW_PROCESS_GROUP or NORMAL_PRIORITY_CLASS, nil, IfThen(thisFolder <> '', PWideChar(thisFolder), nil),
-        suiStartup, piProcess) then
-      begin
-        // Freezes without the pause ..
-        Sleep(100);
-
-        CloseHandle(hWrite);
-        try
-          repeat
-            dRunning := WaitForSingleObject(piProcess.hProcess, 100);
-
-            repeat
-              dRead := 0;
-              if ReadFile(hRead, pBuffer[0], CReadBuffer, dRead, nil) then
-              begin
-                pBuffer[dRead] := #0;
-                //OemToAnsi(pBuffer, pBuffer);
-                Result := Result + String(pBuffer);
-              end;
-            until (dRead < CReadBuffer);
-          until (dRunning <> WAIT_TIMEOUT);
-        finally
-          CloseHandle(piProcess.hProcess);
-          CloseHandle(piProcess.hThread);
-        end;
-      end else
-        raise Exception.Create('Can not CreateProcess ' + QuotedStr(thisString));
+        repeat
+          dRead := 0;
+          if ReadFile(hRead, pBuffer[0], CReadBuffer, dRead, nil) then
+          begin
+            pBuffer[dRead] := #0;
+            //OemToAnsi(pBuffer, pBuffer);
+            Result := Result + String(pBuffer);
+          end;
+        until (dRead < CReadBuffer);
+      until (dRunning <> WAIT_TIMEOUT);
     finally
-      CloseHandle(hRead);
+      CloseHandle(piProcess.hProcess);
+      CloseHandle(piProcess.hThread);
     end;
-  end else
-    raise Exception.Create('Can not CreatePipe ' + QuotedStr(thisString));
+  finally
+    CloseHandle(hRead);
+  end;
 end;
 
 

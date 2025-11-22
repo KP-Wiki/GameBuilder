@@ -103,7 +103,7 @@ object Form1: TForm1
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Anchors = [akLeft, akTop, akRight]
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
