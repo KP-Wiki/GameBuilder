@@ -2,272 +2,87 @@ unit KM_BuilderKP;
 {$I ..\..\KM_CompilerDirectives.inc}
 interface
 uses
-  Winapi.Windows, System.Classes, System.SysUtils, System.Generics.Defaults;
+  System.Classes,
+  System.SysUtils,
+  KM_BuilderCommon;
 
 
 type
-  TKMBuilderStep = (
-    bsInitialize,
-    //todo: We could patch source (with ScriptingParser)
-    //todo: We could update Wiki (with ScriptingParser)
-    bsCleanSource,
-    bsBuildExe,
-    bsPatchExe,
-    bsPackData,
-    //todo: We could build TestGame and check its output
-    bsArrangeFolder,
-    bsPack7zip,
-    bsPackInstaller,
-    //todo: We could create small archive with dedicated servers
-    bsCreatePatch,
-    bsRegisterOnKT, //todo: We could register version on KT (with KT_Admin)
-    bsCommitAndTag
-  );
-  TKMBuilderStepSet = set of TKMBuilderStep;
-
-const
-  BuilderStepName: array [TKMBuilderStep] of string = (
-    'Initialize',
-    'Clean sources',
-    'Build executables',
-    'Patch game executable',
-    'Pack data',
-    'Arrange build folder',
-    'Pack 7-zip',
-    'Pack installer',
-    'Create patch',
-    'Register on KT',
-    'Commit and Tag'
-  );
-
-type
-  TKMBuilderConfiguration = (
-    bcNightly,
-    bcRelease
-  );
-
-const
-  BuilderConfigName: array [TKMBuilderConfiguration] of string = (
-    'Nightly build (7z)',
-    'Full build (7z + installer)'
-  );
-
-  STEPS_OF_CONFIG: array [TKMBuilderConfiguration] of TKMBuilderStepSet = (
-    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsCreatePatch, bsRegisterOnKT, bsCommitAndTag]),
-    ([bsInitialize, bsCleanSource, bsBuildExe, bsPatchExe, bsPackData, bsArrangeFolder, bsPack7zip, bsPackInstaller, bsCreatePatch, bsRegisterOnKT, bsCommitAndTag])
-  );
-
-type
-  TKMBuilder = class
+  TKMBuilderKP = class(TKMBuilder)
   private
-    fOnLog: TProc<string>;
-    fOnStepBegin: TProc<TKMBuilderStep>;
-    fOnStepDone: TProc<TKMBuilderStep, Integer>;
-    fOnDone: TProc;
-    fWorker: TThread;
-
     fGameName: string;
     fBuildVersion: string;
     fBuildRevision: Integer;
     fBuildFolder: string;
     fBuildResult7zip: string;
 
-    procedure DeleteFileIfExists(const aFilename: string);
-    procedure DeleteRecursive(const aPath: string; const aFilters: array of string; aAvoid: array of string);
-    procedure CopyFile(const aPathFrom, aPathTo: string);
-    procedure CopyFilesRecursive(const aPathFrom, aPathTo: string; const aFilter: string; aRecursive: Boolean);
-    procedure CopyFolder(const aPathFrom, aPathTo: string);
-
-    procedure CheckFileExists(const aAppName, aFilename: string);
-    function CheckTerminated: Boolean;
-
-    procedure Step01_Initialize;
-    procedure Step02_CleanSource;
-    procedure Step03_BuildGameExe;
-    procedure Step04_PatchGameExe;
-    procedure Step05_PackData;
-    procedure Step06_ArrangeFolder;
-    procedure Step07_Pack7zip;
-    procedure Step08_PackInstaller;
-    procedure Step09_CreatePatch;
-    procedure Step10_RegisterOnKT;
-    procedure Step11_CommitAndTag;
+    procedure Step00_Initialize;
+    procedure Step01_CleanSource;
+    procedure Step02_BuildGameExe;
+    procedure Step03_PatchGameExe;
+    procedure Step04_PackData;
+    procedure Step05_ArrangeFolder;
+    procedure Step06_Pack7zip;
+    procedure Step07_PackInstaller;
+    procedure Step08_CreatePatch;
+    procedure Step09_RegisterOnKT;
+    procedure Step10_CommitAndTag;
   public
-    constructor Create(const aGameName, aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
-    procedure Perform(aSteps: TKMBuilderStepSet);
-    procedure Stop;
+    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
-    property BuildRevision: Integer read fBuildRevision;
-    property BuildFolder: string read fBuildFolder;
-    property BuildResult7zip: string read fBuildResult7zip;
+    function GetInfo: string; override;
   end;
 
 
 implementation
 uses
-  System.IOUtils, System.Masks, System.DateUtils, System.StrUtils, System.Generics.Collections,
+  System.IOUtils, System.DateUtils,
   KromUtils;
 
 
-{ TKMBuilder }
-constructor TKMBuilder.Create(const aGameName, aBuildVersion: string; aOnLog: TProc<string>; aOnStepBegin: TProc<TKMBuilderStep>; aOnStepDone: TProc<TKMBuilderStep, Integer>; aOnDone: TProc);
+{ TKMBuilderKP }
+constructor TKMBuilderKP.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
-  inherited Create;
+  inherited;
 
-  fGameName := aGameName;
-  fBuildVersion := aBuildVersion;
-  fOnLog := aOnLog;
-  fOnStepBegin := aOnStepBegin;
-  fOnStepDone := aOnStepDone;
-  fOnDone := aOnDone;
+  fGameName := 'Knights Province';
+  fBuildVersion := 'Alpha 13 wip';
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
+  fBuildResult7zip := '<no filename>';
+
+  fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step00_Initialize));
+  fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step01_CleanSource));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step02_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step03_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step04_PackData));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step05_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step06_Pack7zip));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step07_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step08_CreatePatch));
+  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step09_RegisterOnKT));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step10_CommitAndTag));
+
+  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',           [0,1,2,3,4,5,6,  8,9,10]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)',  [0,1,2,3,4,5,6,7,8,9,10]));
 end;
 
 
-procedure TKMBuilder.CheckFileExists(const aAppName, aFilename: string);
+function TKMBuilderKP.GetInfo: string;
 begin
-  // Check that file is available at given path
-  if not FileExists(aFilename) then
-    raise Exception.Create(Format('%s not found at "%s"', [aAppName, aFilename]));
+  var sb := TStringBuilder.Create;
+  sb.AppendLine(Format('Game name: %s', [fGameName]));
+  sb.AppendLine(Format('Version:   %s', [fBuildVersion]));
+  sb.AppendLine(Format('Revision:  r%d', [fBuildRevision]));
+  sb.AppendLine(Format('Folder:    %s', [fBuildFolder]));
+  sb.AppendLine(Format('Archive:   %s', [fBuildResult7zip]));
+  Result := sb.ToString;
+  sb.Free;
 end;
 
 
-function TKMBuilder.CheckTerminated: Boolean;
-begin
-  Result := TThread.CheckTerminated;
-
-  if Result then
-    fOnLog('Terminated');
-end;
-
-
-procedure TKMBuilder.CopyFile(const aPathFrom, aPathTo: string);
-begin
-  ForceDirectories(ExtractFilePath(aPathTo));
-  TFile.Copy(aPathFrom, aPathTo);
-  fOnLog('Copied ' + ExtractFileName(aPathTo));
-end;
-
-
-procedure TKMBuilder.CopyFilesRecursive(const aPathFrom, aPathTo, aFilter: string; aRecursive: Boolean);
-  procedure Internal(const aPathFrom, aPathTo, aFilter: string; aRecursive: Boolean; var aCount: Integer);
-  var
-    SearchRec: TSearchRec;
-  begin
-    if not DirectoryExists(aPathFrom) then Exit;
-
-    if FindFirst(aPathFrom + '*', faAnyFile, SearchRec) = 0 then
-    try
-      repeat
-        if (SearchRec.Name = '.') or (SearchRec.Name = '..') then
-          Continue;
-
-        if (SearchRec.Attr and faDirectory) <> 0 then
-        begin
-          if aRecursive then
-            Internal(aPathFrom + SearchRec.Name + '\', aPathTo + SearchRec.Name + '\', aFilter, aRecursive, aCount);
-        end else
-        begin
-          if MatchesMask(SearchRec.Name, aFilter) then
-          begin
-            ForceDirectories(aPathTo);
-            TFile.Copy(aPathFrom + SearchRec.Name, aPathTo + SearchRec.Name);
-
-            fOnLog(aPathFrom + SearchRec.Name);
-            Inc(aCount);
-          end;
-        end;
-      until FindNext(SearchRec) <> 0;
-    finally
-      FindClose(SearchRec);
-    end;
-  end;
-begin
-  var cnt := 0;
-  Internal(aPathFrom, aPathTo, aFilter, aRecursive, cnt);
-  fOnLog(Format('Copied %d files', [cnt]));
-end;
-
-
-procedure TKMBuilder.CopyFolder(const aPathFrom, aPathTo: string);
-begin
-  TDirectory.Copy(aPathFrom, aPathTo);
-  fOnLog('Copied ' + ExtractFileName(ExcludeTrailingPathDelimiter(aPathFrom)) + '\');
-end;
-
-
-procedure TKMBuilder.DeleteFileIfExists(const aFilename: string);
-begin
-  if FileExists(aFilename) then
-  begin
-    fOnLog('Deleting ' + aFilename);
-
-    if not DeleteFile(aFilename) then
-      raise Exception.Create(Format('Failed to delete "%s". Is it locked by something?', [aFilename]));
-  end;
-end;
-
-procedure TKMBuilder.DeleteRecursive(const aPath: string; const aFilters: array of string; aAvoid: array of string);
-  procedure Internal(const aPath: string; const aFilters: array of string; aAvoid: array of string; var aCount: Integer);
-  var
-    SearchRec: TSearchRec;
-  begin
-    if not DirectoryExists(aPath) then Exit;
-
-    if FindFirst(aPath + '*', faAnyFile, SearchRec) = 0 then
-    try
-      repeat
-        if (SearchRec.Name = '.') or (SearchRec.Name = '..') then
-          Continue;
-
-        if MatchText(SearchRec.Name, aAvoid) then
-          Continue;
-
-        var fullName := aPath + SearchRec.Name;
-
-        // SymLinks need to be unrolled
-        var s := '';
-        var b := TFile.GetSymLinkTarget(fullName, s);
-        if b then fullName := s;
-
-        for var Filter in aFilters do
-        if MatchesMask(SearchRec.Name, Filter) then
-        begin
-          if (SearchRec.Attr and faDirectory) <> 0 then
-            TDirectory.Delete(fullName, True)
-          else
-            TFile.Delete(fullName);
-
-          fOnLog(fullName);
-          Inc(aCount);
-        end;
-
-        if (SearchRec.Attr and faDirectory) <> 0 then
-          Internal(fullName + '\', aFilters, aAvoid, aCount);
-      until FindNext(SearchRec) <> 0;
-    finally
-      FindClose(SearchRec);
-    end;
-  end;
-begin
-  var cnt := 0;
-  Internal(aPath, aFilters, aAvoid, cnt);
-  fOnLog(Format('Deleted %d files and folders', [cnt]));
-end;
-
-
-procedure TKMBuilder.Stop;
-begin
-  if fWorker = nil then Exit;
-
-  fWorker.Terminate;
-  fWorker := nil;
-end;
-
-
-procedure TKMBuilder.Step01_Initialize;
+procedure TKMBuilderKP.Step00_Initialize;
 begin
   CheckFileExists('Main project file', 'KnightsProvince.dproj');
 
@@ -289,7 +104,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step02_CleanSource;
+procedure TKMBuilderKP.Step01_CleanSource;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
@@ -303,7 +118,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step03_BuildGameExe;
+procedure TKMBuilderKP.Step02_BuildGameExe;
   procedure BuildWin(const aProject, aExe: string);
   begin
     DeleteFileIfExists(aExe);
@@ -358,7 +173,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step04_PatchGameExe;
+procedure TKMBuilderKP.Step03_PatchGameExe;
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -384,7 +199,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step05_PackData;
+procedure TKMBuilderKP.Step04_PackData;
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -408,7 +223,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step06_ArrangeFolder;
+procedure TKMBuilderKP.Step05_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -451,7 +266,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step07_Pack7zip;
+procedure TKMBuilderKP.Step06_Pack7zip;
 begin
   var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
   CheckFileExists('7-zip', sevenZipFilename);
@@ -473,7 +288,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step08_PackInstaller;
+procedure TKMBuilderKP.Step07_PackInstaller;
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fBuildVersion, fBuildRevision]);
   var installerName := appName + ' Installer';
@@ -517,7 +332,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Step09_CreatePatch;
+procedure TKMBuilderKP.Step08_CreatePatch;
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -530,18 +345,18 @@ begin
 end;
 
 
-procedure TKMBuilder.Step10_RegisterOnKT;
+procedure TKMBuilderKP.Step09_RegisterOnKT;
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
 
   // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
-  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, BuildFolder, 13, fBuildRevision]);
+  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, fBuildFolder, 13, fBuildRevision]);
   CreateProcessSimple(cmdKtAdmin, True, True, False);
 end;
 
 
-procedure TKMBuilder.Step11_CommitAndTag;
+procedure TKMBuilderKP.Step10_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
@@ -552,54 +367,6 @@ begin
   fOnLog('tag ..');
   var cmdTag := Format('git tag r%d', [fBuildRevision]);
   CreateProcessSimple(cmdTag, False, True, False);
-end;
-
-
-procedure TKMBuilder.Perform(aSteps: TKMBuilderStepSet);
-var
-  theSteps: TKMBuilderStepSet;
-begin
-  // Try to capture into local variable, just in case
-  theSteps := aSteps;
-
-  fWorker := TThread.CreateAnonymousThread(
-    procedure
-    begin
-      try
-        for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
-        if I in theSteps then
-        begin
-          fOnStepBegin(I);
-
-          var t := GetTickCount;
-
-          case I of
-            bsInitialize:       Step01_Initialize;
-            bsCleanSource:      Step02_CleanSource;
-            bsBuildExe:         Step03_BuildGameExe;
-            bsPatchExe:         Step04_PatchGameExe;
-            bsPackData:         Step05_PackData;
-            bsArrangeFolder:    Step06_ArrangeFolder;
-            bsPack7zip:         Step07_Pack7zip;
-            bsPackInstaller:    Step08_PackInstaller;
-            bsCreatePatch:      Step09_CreatePatch;
-            bsRegisterOnKT:     Step10_RegisterOnKT;
-            bsCommitAndTag:     Step11_CommitAndTag;
-          end;
-
-          fOnStepDone(I, GetTickCount - t);
-
-          if CheckTerminated then
-            Exit;
-        end;
-        fOnDone;
-      except
-        on E: Exception do
-          fOnLog('ERROR: ' + E.Message);
-      end;
-    end);
-
-  fWorker.Start;
 end;
 
 

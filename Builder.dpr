@@ -1,9 +1,13 @@
 program Builder;
 uses
   Vcl.Forms,
+
+  KromUtils in 'common\KromUtils.pas',
+
   UnitBuilder in 'UnitBuilder.pas' {Form1},
-  KM_BuilderKP in 'KM_BuilderKP.pas',
-  KromUtils in 'common\KromUtils.pas';
+
+  //todo: KM_BuilderKMR in 'KM_BuilderKMR.pas',
+  KM_BuilderKP in 'KM_BuilderKP.pas';
 
 {$R *.res}
 

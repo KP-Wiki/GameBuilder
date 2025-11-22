@@ -2,41 +2,36 @@ unit UnitBuilder;
 {$I ..\..\KM_CompilerDirectives.inc}
 interface
 uses
-  Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, System.Classes,
-  KM_BuilderKP, Vcl.ExtCtrls;
+  System.Classes,
+  Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.ExtCtrls,
+  KM_BuilderCommon, {KM_BuilderKMR,} KM_BuilderKP;
 
 
 type
   TForm1 = class(TForm)
-    Memo1: TMemo;
+    meLog: TMemo;
     btnStop: TButton;
-    edBuildVersion: TEdit;
-    Label5: TLabel;
-    Label1: TLabel;
-    Label2: TLabel;
-    lblBuildRevision: TLabel;
-    lblBuildFolder: TLabel;
-    Label3: TLabel;
-    edGameName: TEdit;
     pnlBuildStep: TPanel;
     pnlBuildConfig: TPanel;
-    Label4: TLabel;
-    lblResult7zip: TLabel;
-    procedure FormCreate(Sender: TObject);
+    meInfo: TMemo;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;   procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
     procedure btnBuildClick(Sender: TObject);
   private
     fBuilder: TKMBuilder;
-    fConfigButton: array [TKMBuilderConfiguration] of TButton;
-    fStepButton: array [TKMBuilderStep] of TButton;
-    fStepPanel: array [TKMBuilderStep] of TPanel;
+    fConfigButton: array {Configuration} of TButton;
+    fStepButton: array {Step} of TButton;
+    fStepPanel: array {Step} of TPanel;
     procedure CreateButtons;
     procedure ControlsEnable(aFlag: Boolean);
-    procedure UpdateCheckboxes(aSteps: TKMBuilderStepSet);
+    procedure UpdateCheckboxes(aConfig: Integer);
     procedure HandleBuilderLog(aText: string);
-    procedure HandleBuilderStepBegin(aStep: TKMBuilderStep);
-    procedure HandleBuilderStepDone(aStep: TKMBuilderStep; aTimeMsec: Integer);
+    procedure HandleBuilderStepBegin(aStep: Integer);
+    procedure HandleBuilderStepDone(aStep: Integer; aTimeMsec: Integer);
     procedure HandleBuilderDone;
     procedure HandleBuildMouseEnter(Sender: TObject);
     procedure HandleBuildMouseLeave(Sender: TObject);
@@ -56,6 +51,11 @@ uses
 { TForm1 }
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  //todo: Decide on the run mode
+  fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+
+  meInfo.Text := fBuilder.GetInfo;
+
   CreateButtons;
 end;
 
@@ -63,14 +63,15 @@ end;
 procedure TForm1.CreateButtons;
 begin
   pnlBuildConfig.Caption := '';
-  for var I := Low(TKMBuilderConfiguration) to High(TKMBuilderConfiguration) do
+  SetLength(fConfigButton, fBuilder.GetConfigCount);
+  for var I := 0 to fBuilder.GetConfigCount - 1 do
   begin
     fConfigButton[I] := TButton.Create(pnlBuildConfig);
     fConfigButton[I].Parent := pnlBuildConfig;
     fConfigButton[I].Top := 28 * Ord(I);
     fConfigButton[I].Width := pnlBuildConfig.Width;
     fConfigButton[I].Height := 25;
-    fConfigButton[I].Caption := BuilderConfigName[I];
+    fConfigButton[I].Caption := fBuilder.GetConfigName(I);
     fConfigButton[I].Tag := Ord(I);
     fConfigButton[I].OnMouseEnter := HandleBuildMouseEnter;
     fConfigButton[I].OnMouseLeave := HandleBuildMouseLeave;
@@ -78,14 +79,16 @@ begin
   end;
 
   pnlBuildStep.Caption := '';
-  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
+  SetLength(fStepButton, fBuilder.GetStepCount);
+  SetLength(fStepPanel, fBuilder.GetStepCount);
+  for var I := 0 to fBuilder.GetStepCount - 1 do
   begin
     fStepButton[I] := TButton.Create(pnlBuildStep);
     fStepButton[I].Parent := pnlBuildStep;
     fStepButton[I].Top := 28 * Ord(I);
     fStepButton[I].Width := pnlBuildStep.Width - 80;
     fStepButton[I].Height := 25;
-    fStepButton[I].Caption := BuilderStepName[I];
+    fStepButton[I].Caption := fBuilder.GetStepName(I);
     fStepButton[I].Tag := Ord(I);
     fStepButton[I].OnClick := btnStepClick;
 
@@ -105,37 +108,35 @@ begin
 end;
 
 
-procedure TForm1.HandleBuilderStepBegin(aStep: TKMBuilderStep);
+procedure TForm1.HandleBuilderStepBegin(aStep: Integer);
 begin
   TThread.Synchronize(nil,
     procedure
     begin
-      Memo1.Lines.Append(Format('>>>--- Step "%s"', [BuilderStepName[aStep]]));
+      meLog.Lines.Append(Format('>>>--- Step "%s"', [fBuilder.GetStepName(aStep)]));
       fStepPanel[aStep].Color := $80FFFF;
     end);
 end;
 
 
-procedure TForm1.HandleBuilderStepDone(aStep: TKMBuilderStep; aTimeMsec: Integer);
+procedure TForm1.HandleBuilderStepDone(aStep: Integer; aTimeMsec: Integer);
 begin
   TThread.Synchronize(nil,
     procedure
     begin
-      Memo1.Lines.Append(Format('>>>--- Done "%s"', [BuilderStepName[aStep]]));
+      meLog.Lines.Append(Format('>>>--- Done "%s"', [fBuilder.GetStepName(aStep)]));
       fStepPanel[aStep].Caption := Format('%dms', [aTimeMsec]);
       fStepPanel[aStep].Color := $80FF80;
 
-      lblBuildRevision.Caption := IntToStr(fBuilder.BuildRevision);
-      lblBuildFolder.Caption := fBuilder.BuildFolder;
-      lblResult7zip.Caption := fBuilder.BuildResult7zip;
+      meInfo.Text := fBuilder.GetInfo;
     end);
 end;
 
 
-procedure TForm1.UpdateCheckboxes(aSteps: TKMBuilderStepSet);
+procedure TForm1.UpdateCheckboxes(aConfig: Integer);
 begin
-  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
-    fStepButton[I].Visible := (I in aSteps) or (aSteps = []);
+  for var I := 0 to fBuilder.GetStepCount - 1 do
+    fStepButton[I].Visible := (aConfig = -1) or fBuilder.GetConfigContainsStep(aConfig, I);
 end;
 
 
@@ -145,7 +146,7 @@ begin
     procedure
     begin
       ControlsEnable(True);
-      Memo1.Lines.Append('Task done');
+      meLog.Lines.Append('Task done');
     end);
 end;
 
@@ -155,7 +156,7 @@ begin
   TThread.Synchronize(nil,
     procedure
     begin
-      Memo1.Lines.Append(aText);
+      meLog.Lines.Append(aText);
     end);
 end;
 
@@ -171,46 +172,45 @@ end;
 procedure TForm1.HandleBuildMouseEnter(Sender: TObject);
 begin
   // Highlight checkboxes steps that will be executed
-  var buildConfig := TKMBuilderConfiguration(TButton(Sender).Tag);
-  UpdateCheckboxes(STEPS_OF_CONFIG[buildConfig]);
+  var buildConfig := TButton(Sender).Tag;
+  UpdateCheckboxes(buildConfig);
 end;
 
 
 procedure TForm1.HandleBuildMouseLeave(Sender: TObject);
 begin
   // Highlight nothing
-  UpdateCheckboxes([]);
+  UpdateCheckboxes(-1);
 end;
 
 
 procedure TForm1.btnBuildClick(Sender: TObject);
 begin
-  fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  fBuilder.Free;
+  fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+
+  meInfo.Text := fBuilder.GetInfo;
 
   ControlsEnable(False);
 
-  var buildConfig := TKMBuilderConfiguration(TButton(Sender).Tag);
-  var steps: TKMBuilderStepSet := [];
-  for var I := Low(TKMBuilderStep) to High(TKMBuilderStep) do
-  begin
-    if I in STEPS_OF_CONFIG[buildConfig] then
-      steps := steps + [I];
-
+  var buildConfig := TButton(Sender).Tag;
+  for var I := 0 to fBuilder.GetStepCount - 1 do
     fStepPanel[I].Color := $808080;
-  end;
 
-  fBuilder.Perform(steps);
+  fBuilder.Perform(buildConfig);
 end;
 
 
 procedure TForm1.btnStepClick(Sender: TObject);
 begin
   if not Assigned(fBuilder) then
-    fBuilder := TKMBuilder.Create(edGameName.Text, edBuildVersion.Text, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+    fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+
+  meInfo.Text := fBuilder.GetInfo;
 
   ControlsEnable(False);
-  var step := TKMBuilderStep(TButton(Sender).Tag);
-  fBuilder.Perform([step]);
+  var step := TButton(Sender).Tag;
+  fBuilder.PerformStep(step);
 end;
 
 
