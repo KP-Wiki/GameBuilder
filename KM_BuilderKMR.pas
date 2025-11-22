@@ -49,9 +49,11 @@ constructor TKMBuilderKMR.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventSt
 begin
   inherited;
 
+  // Builder constants
   fGameName := 'KaM Remake';
   fGameVersion := 'Beta';
 
+  // Component and Tool paths (will be moved into INI or XML settings)
   fPrivateRepoPath:= '..\kam_remake_private.rey\';
   fResourcesRepoPath := '..\kam_remake.rey.resources\';
   fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
@@ -79,15 +81,22 @@ end;
 function TKMBuilderKMR.GetInfo: string;
 begin
   var sb := TStringBuilder.Create;
+
+  // Constants
   sb.AppendLine(Format('Game name:      %s', [fGameName]));
   sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
+
+  // Paths
   sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
   sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
   sb.AppendLine(Format('Pandoc:         %s', [fPandocPath]));
+
+  // Properties
   sb.AppendLine('');
   sb.AppendLine(Format('Revision:       r%d', [fBuildRevision]));
   sb.AppendLine(Format('Folder:         %s', [fBuildFolder]));
   sb.AppendLine(Format('Installer:      %s', [fBuildResultInstaller]));
+
   Result := sb.ToString;
   sb.Free;
 end;

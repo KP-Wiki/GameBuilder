@@ -24,7 +24,7 @@ object Form1: TForm1
   end
   object Label2: TLabel
     Left = 312
-    Top = 160
+    Top = 208
     Width = 50
     Height = 15
     Caption = 'Build log:'
@@ -45,9 +45,9 @@ object Form1: TForm1
   end
   object meLog: TMemo
     Left = 312
-    Top = 176
-    Width = 601
-    Height = 425
+    Top = 224
+    Width = 597
+    Height = 377
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -97,8 +97,8 @@ object Form1: TForm1
   object meInfo: TMemo
     Left = 312
     Top = 32
-    Width = 601
-    Height = 121
+    Width = 597
+    Height = 169
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2

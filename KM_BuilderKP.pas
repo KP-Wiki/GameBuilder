@@ -10,7 +10,8 @@ type
   TKMBuilderKP = class(TKMBuilder)
   private
     fGameName: string;
-    fBuildVersion: string;
+    fGameVersion: string;
+
     fBuildRevision: Integer;
     fBuildFolder: string;
     fBuildResult7zip: string;
@@ -43,9 +44,12 @@ uses
 constructor TKMBuilderKP.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
-
+  
+  // Builder constants
   fGameName := 'Knights Province';
-  fBuildVersion := 'Alpha 13 wip';
+  fGameVersion := 'Alpha 13 wip';
+
+  // Component and Tool paths (will be moved into INI or XML settings)
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
@@ -71,11 +75,19 @@ end;
 function TKMBuilderKP.GetInfo: string;
 begin
   var sb := TStringBuilder.Create;
-  sb.AppendLine(Format('Game name: %s', [fGameName]));
-  sb.AppendLine(Format('Version:   %s', [fBuildVersion]));
-  sb.AppendLine(Format('Revision:  r%d', [fBuildRevision]));
-  sb.AppendLine(Format('Folder:    %s', [fBuildFolder]));
-  sb.AppendLine(Format('Archive:   %s', [fBuildResult7zip]));
+
+  // Constants
+  sb.AppendLine(Format('Game name:    %s', [fGameName]));
+  sb.AppendLine(Format('Game version: %s', [fGameVersion]));
+
+  // Paths
+
+  // Properties
+  sb.AppendLine('');
+  sb.AppendLine(Format('Revision:     r%d', [fBuildRevision]));
+  sb.AppendLine(Format('Folder:       %s', [fBuildFolder]));
+  sb.AppendLine(Format('Archive:      %s', [fBuildResult7zip]));
+
   Result := sb.ToString;
   sb.Free;
 end;
@@ -88,6 +100,8 @@ begin
   fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
+
+  // KP history is slightly botched up, ~8500 commits got duplicated
   fBuildRevision := StrToInt(Trim(res)) - 8500;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
@@ -95,10 +109,10 @@ begin
 
   // Write revision number for game exe and launcher/updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
-  TFile.WriteAllText('.\version', fBuildVersion + ' r' + IntToStr(fBuildRevision));
+  TFile.WriteAllText('.\version', fGameVersion + ' r' + IntToStr(fBuildRevision));
 
   var dtNow := Now;
-  fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fBuildVersion, fBuildRevision]);
+  fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fGameVersion, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
 end;
 
@@ -289,7 +303,7 @@ end;
 
 procedure TKMBuilderKP.Step07_PackInstaller;
 begin
-  var appName := Format('%s (%s r%d)', [fGameName, fBuildVersion, fBuildRevision]);
+  var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
   var installerName := appName + ' Installer';
   var installerNameExe := installerName + '.exe';
 
