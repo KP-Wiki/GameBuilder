@@ -1,5 +1,4 @@
 unit KM_BuilderCommon;
-{$I ..\..\KM_CompilerDirectives.inc}
 interface
 uses
   Winapi.Windows, System.Classes, System.SysUtils, System.Generics.Collections;

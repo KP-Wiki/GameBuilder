@@ -1,4 +1,4 @@
-unit KM_BuilderKP;
+unit KM_BuilderKMR;
 interface
 uses
   System.Classes,
@@ -7,7 +7,7 @@ uses
 
 
 type
-  TKMBuilderKP = class(TKMBuilder)
+  TKMBuilderKMR = class(TKMBuilder)
   private
     fGameName: string;
     fBuildVersion: string;
@@ -39,13 +39,13 @@ uses
   KromUtils;
 
 
-{ TKMBuilderKP }
-constructor TKMBuilderKP.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+{ TKMBuilderKMR }
+constructor TKMBuilderKMR.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
 
-  fGameName := 'Knights Province';
-  fBuildVersion := 'Alpha 13 wip';
+  fGameName := 'KaM Remake';
+  fBuildVersion := 'Beta';
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
@@ -68,7 +68,7 @@ begin
 end;
 
 
-function TKMBuilderKP.GetInfo: string;
+function TKMBuilderKMR.GetInfo: string;
 begin
   var sb := TStringBuilder.Create;
   sb.AppendLine(Format('Game name: %s', [fGameName]));
@@ -81,21 +81,20 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step00_Initialize;
+procedure TKMBuilderKMR.Step00_Initialize;
 begin
-  CheckFileExists('Main project file', 'KnightsProvince.dproj');
+  CheckFileExists('Main project file', 'KaM_Remake.dproj');
 
   fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
-  fBuildRevision := StrToInt(Trim(res)) - 8500;
+  fBuildRevision := StrToInt(Trim(res));
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
   if CheckTerminated then Exit;
 
-  // Write revision number for game exe and launcher/updater
-  TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
-  TFile.WriteAllText('.\version', fBuildVersion + ' r' + IntToStr(fBuildRevision));
+  // Write revision number for game exe
+  TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM=' + IntToStr(fBuildRevision));
 
   var dtNow := Now;
   fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fBuildVersion, fBuildRevision]);
@@ -103,7 +102,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step01_CleanSource;
+procedure TKMBuilderKMR.Step01_CleanSource;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
@@ -117,7 +116,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step02_BuildGameExe;
+procedure TKMBuilderKMR.Step02_BuildGameExe;
   procedure BuildWin(const aProject, aExe: string);
   begin
     DeleteFileIfExists(aExe);
@@ -172,7 +171,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step03_PatchGameExe;
+procedure TKMBuilderKMR.Step03_PatchGameExe;
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -198,7 +197,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step04_PackData;
+procedure TKMBuilderKMR.Step04_PackData;
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -222,7 +221,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step05_ArrangeFolder;
+procedure TKMBuilderKMR.Step05_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -265,7 +264,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step06_Pack7zip;
+procedure TKMBuilderKMR.Step06_Pack7zip;
 begin
   var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
   CheckFileExists('7-zip', sevenZipFilename);
@@ -287,7 +286,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step07_PackInstaller;
+procedure TKMBuilderKMR.Step07_PackInstaller;
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fBuildVersion, fBuildRevision]);
   var installerName := appName + ' Installer';
@@ -331,7 +330,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step08_CreatePatch;
+procedure TKMBuilderKMR.Step08_CreatePatch;
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -344,7 +343,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step09_RegisterOnKT;
+procedure TKMBuilderKMR.Step09_RegisterOnKT;
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
@@ -355,7 +354,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step10_CommitAndTag;
+procedure TKMBuilderKMR.Step10_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);

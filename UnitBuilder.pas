@@ -1,10 +1,9 @@
 unit UnitBuilder;
-{$I ..\..\KM_CompilerDirectives.inc}
 interface
 uses
   System.Classes,
   Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.ExtCtrls,
-  KM_BuilderCommon, {KM_BuilderKMR,} KM_BuilderKP;
+  KM_BuilderCommon, KM_BuilderKMR, KM_BuilderKP;
 
 
 type
@@ -52,7 +51,8 @@ uses
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   //todo: Decide on the run mode
-  fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 
   meInfo.Text := fBuilder.GetInfo;
 
@@ -187,7 +187,8 @@ end;
 procedure TForm1.btnBuildClick(Sender: TObject);
 begin
   fBuilder.Free;
-  fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 
   meInfo.Text := fBuilder.GetInfo;
 
@@ -204,7 +205,8 @@ end;
 procedure TForm1.btnStepClick(Sender: TObject);
 begin
   if not Assigned(fBuilder) then
-    fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+    //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+    fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
 
   meInfo.Text := fBuilder.GetInfo;
 
