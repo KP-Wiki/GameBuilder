@@ -12,13 +12,14 @@ type
     fGameName: string;
     fGameVersion: string;
 
-
     fMadExceptPath: string;
+    f7zipPath: string;
     fInnoSetupPath: string;
 
     fBuildRevision: Integer;
     fBuildFolder: string;
     fBuildResult7zip: string;
+    fBuildResultInstaller: string;
 
     procedure Step00_Initialize;
     procedure Step01_CleanSource;
@@ -55,11 +56,13 @@ begin
 
   // Component and Tool paths (will be moved into INI or XML settings)
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
+  f7zipPath := 'C:\Program Files\7-Zip\7z.exe';
   fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
   fBuildResult7zip := '<no filename>';
+  fBuildResultInstaller := '<no filename>';
 
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step00_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step01_CleanSource));
@@ -83,11 +86,13 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:    %s', [fGameName]));
-  sb.AppendLine(Format('Game version: %s', [fGameVersion]));
+  sb.AppendLine(Format('Game name:      %s', [fGameName]));
+  sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
 
   // Paths
+  sb.AppendLine('');
   sb.AppendLine(Format('MadExcept:      %s', [fMadExceptPath]));
+  sb.AppendLine(Format('7-zip:          %s', [f7zipPath]));
   sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
 
   // Properties
@@ -95,6 +100,7 @@ begin
   sb.AppendLine(Format('Revision:       r%d', [fBuildRevision]));
   sb.AppendLine(Format('Folder:         %s', [fBuildFolder]));
   sb.AppendLine(Format('7-zip package:  %s', [fBuildResult7zip]));
+  sb.AppendLine(Format('Installer:      %s', [fBuildResultInstaller]));
 
   Result := sb.ToString;
   sb.Free;
@@ -122,6 +128,7 @@ begin
   var dtNow := Now;
   fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fGameVersion, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
+  fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + ' Installer.exe';
 end;
 
 
@@ -259,13 +266,12 @@ end;
 
 procedure TKMBuilderKP.Step06_Pack7zip;
 begin
-  var sevenZipFilename := 'C:\Program Files\7-Zip\7z.exe';
-  CheckFileExists('7-zip', sevenZipFilename);
+  CheckFileExists('7-zip', f7zipPath);
 
   // Delete old archive if we had it for some reason
   DeleteFileIfExists(fBuildResult7zip);
 
-  var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [sevenZipFilename, fBuildResult7zip, fBuildFolder]);
+  var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s"', [f7zipPath, fBuildResult7zip, fBuildFolder]);
   var res := CaptureConsoleOutput('.\', cmd7zip);
   fOnLog(res);
 
@@ -282,11 +288,9 @@ end;
 procedure TKMBuilderKP.Step07_PackInstaller;
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
-  var installerName := appName + ' Installer';
-  var installerNameExe := installerName + '.exe';
 
   // Delete old installer if we had it for some reason
-  DeleteFileIfExists(installerNameExe);
+  DeleteFileIfExists(fBuildResultInstaller);
 
   var sl := TStringList.Create;
   sl.Append('; REVISION (write into Registry)');
@@ -296,7 +300,7 @@ begin
   sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [fBuildFolder]));
   sl.Append('');
   sl.Append('; How the installer executable will be named');
-  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [installerName]));
+  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [ChangeFileExt(fBuildResultInstaller, '')]));
   sl.Append('');
   sl.Append('; Application name used in many places');
   sl.Append(Format('#define MyAppName '#39'%s'#39, [appName]));
@@ -314,8 +318,8 @@ begin
   var res := CaptureConsoleOutput('.\', cmdInstaller);
   fOnLog(res);
 
-  var szAfter := TFile.GetSize(installerNameExe);
-  fOnLog(Format('Size of "%s" - %d bytes', [installerNameExe, szAfter]));
+  var szAfter := TFile.GetSize(fBuildResultInstaller);
+  fOnLog(Format('Size of "%s" - %d bytes', [fBuildResultInstaller, szAfter]));
 
   if szAfter <= 0 then
     raise Exception.Create('Resulting installer is too small?');
