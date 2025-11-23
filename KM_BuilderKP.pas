@@ -24,7 +24,8 @@ type
     fBuildResultInstaller: string;
 
     procedure Step00_Initialize;
-    procedure Step01_CleanSource;
+    procedure Step01_DeleteTempFiles;
+    //todo: Update scripting code and wiki
     procedure Step02_BuildGameExe;
     procedure Step03_PatchGameExe;
     procedure Step04_PackData;
@@ -34,6 +35,7 @@ type
     procedure Step08_CreatePatch;
     procedure Step09_RegisterOnKT;
     procedure Step10_CommitAndTag;
+    //todo: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
@@ -69,7 +71,7 @@ begin
   fBuildResultInstaller := '<no filename>';
 
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step00_Initialize));
-  fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step01_CleanSource));
+  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step01_DeleteTempFiles));
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step02_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step03_PatchGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step04_PackData));
@@ -138,7 +140,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step01_CleanSource;
+procedure TKMBuilderKP.Step01_DeleteTempFiles;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);

@@ -30,10 +30,10 @@ type
     procedure Step00_CheckRepositories;
     procedure Step01_Initialize;
     procedure Step02_CopyNetAuthSecure;
-    procedure Step03_CleanSource;
+    procedure Step03_DeleteTempFiles;
     procedure Step04_GenerateDocs;
     procedure Step05_CopyPrePack;
-    procedure Step06_RxPack;
+    procedure Step06_RxxPack;
     procedure Step07_BuildGameExe;
     procedure Step08_PatchGameExe;
     procedure Step09_ArrangeFolder;
@@ -80,10 +80,10 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step02_CopyNetAuthSecure));
-  fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step03_CleanSource));
+  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step03_DeleteTempFiles));
   fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step04_GenerateDocs));
   fBuildSteps.Add(TKMBuildStep.New('Copy pre-pack',         Step05_CopyPrePack));
-  fBuildSteps.Add(TKMBuildStep.New('RX pack',               Step06_RxPack));
+  fBuildSteps.Add(TKMBuildStep.New('RXX pack',              Step06_RxxPack));
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step07_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step08_PatchGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step09_ArrangeFolder));
@@ -204,7 +204,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step03_CleanSource;
+procedure TKMBuilderKMR.Step03_DeleteTempFiles;
 begin
   // Delete folders
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
@@ -260,7 +260,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step06_RxPack;
+procedure TKMBuilderKMR.Step06_RxxPack;
 begin
   BuildWin(fRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
 
