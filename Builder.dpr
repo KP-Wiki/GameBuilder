@@ -6,7 +6,7 @@ uses
 
   UnitBuilder in 'UnitBuilder.pas' {Form1},
 
-  //todo: KM_BuilderKMR in 'KM_BuilderKMR.pas',
+  KM_BuilderKMR in 'KM_BuilderKMR.pas',
   KM_BuilderKP in 'KM_BuilderKP.pas';
 
 {$R *.res}

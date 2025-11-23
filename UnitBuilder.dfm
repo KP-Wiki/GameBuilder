@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 0
   Caption = 'Game Builder'
   ClientHeight = 617
-  ClientWidth = 929
+  ClientWidth = 1001
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,7 +12,7 @@ object Form1: TForm1
   Font.Style = []
   OnCreate = FormCreate
   DesignSize = (
-    929
+    1001
     617)
   TextHeight = 15
   object Label1: TLabel
@@ -46,7 +46,7 @@ object Form1: TForm1
   object meLog: TMemo
     Left = 312
     Top = 224
-    Width = 597
+    Width = 673
     Height = 377
     Margins.Left = 2
     Margins.Top = 2
@@ -97,7 +97,7 @@ object Form1: TForm1
   object meInfo: TMemo
     Left = 312
     Top = 32
-    Width = 597
+    Width = 673
     Height = 169
     Margins.Left = 2
     Margins.Top = 2

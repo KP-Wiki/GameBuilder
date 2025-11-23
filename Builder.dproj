@@ -99,6 +99,7 @@
         <DCCReference Include="UnitBuilder.pas">
             <Form>Form1</Form>
         </DCCReference>
+        <DCCReference Include="KM_BuilderKMR.pas"/>
         <DCCReference Include="KM_BuilderKP.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -120,10 +121,7 @@
                 <Source>
                     <Source Name="MainSource">Builder.dpr</Source>
                 </Source>
-                <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k280.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp280.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
-                </Excluded_Packages>
+                <Excluded_Packages/>
                 <VersionInfo>
                     <VersionInfo Name="IncludeVerInfo">False</VersionInfo>
                     <VersionInfo Name="AutoIncBuild">False</VersionInfo>
@@ -152,7 +150,6 @@
                     <VersionInfoKeys Name="Comments"/>
                 </VersionInfoKeys>
             </Delphi.Personality>
-            <Deployment Version="4"/>
             <Platforms>
                 <Platform value="Win32">True</Platform>
                 <Platform value="Win64">False</Platform>

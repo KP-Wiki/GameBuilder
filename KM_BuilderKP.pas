@@ -12,6 +12,10 @@ type
     fGameName: string;
     fGameVersion: string;
 
+
+    fMadExceptPath: string;
+    fInnoSetupPath: string;
+
     fBuildRevision: Integer;
     fBuildFolder: string;
     fBuildResult7zip: string;
@@ -50,6 +54,8 @@ begin
   fGameVersion := 'Alpha 13 wip';
 
   // Component and Tool paths (will be moved into INI or XML settings)
+  fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
+  fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
@@ -81,12 +87,14 @@ begin
   sb.AppendLine(Format('Game version: %s', [fGameVersion]));
 
   // Paths
+  sb.AppendLine(Format('MadExcept:      %s', [fMadExceptPath]));
+  sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
 
   // Properties
   sb.AppendLine('');
-  sb.AppendLine(Format('Revision:     r%d', [fBuildRevision]));
-  sb.AppendLine(Format('Folder:       %s', [fBuildFolder]));
-  sb.AppendLine(Format('Archive:      %s', [fBuildResult7zip]));
+  sb.AppendLine(Format('Revision:       r%d', [fBuildRevision]));
+  sb.AppendLine(Format('Folder:         %s', [fBuildFolder]));
+  sb.AppendLine(Format('7-zip package:  %s', [fBuildResult7zip]));
 
   Result := sb.ToString;
   sb.Free;
@@ -132,35 +140,6 @@ end;
 
 
 procedure TKMBuilderKP.Step02_BuildGameExe;
-  procedure BuildWin(const aProject, aExe: string);
-  begin
-    DeleteFileIfExists(aExe);
-
-    fOnLog('Building ' + aExe);
-    begin
-      var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aProject]);
-      var s2 := CaptureConsoleOutput('.\', s);
-      fOnLog(s2);
-    end;
-
-    CheckFileExists('Resulting Windows exe', aExe);
-  end;
-  procedure BuildFpc(const aProject, aExe: string);
-  begin
-    DeleteFileIfExists(aExe);
-
-    var fpcFilename := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
-    CheckFileExists('FPCUpDeluxe', fpcFilename);
-
-    fOnLog('Building ' + aExe);
-    begin
-      var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [fpcFilename, aProject]);
-      var res := CaptureConsoleOutput('.\', cmdFpc);
-      fOnLog(res);
-    end;
-
-    CheckFileExists('Resulting Linux binary', aExe);
-  end;
 begin
   BuildWin('KnightsProvince.dproj', 'KnightsProvince.exe');
 
@@ -193,10 +172,9 @@ begin
 
   fOnLog('Patching KnightsProvince.exe');
   begin
-    var madExceptFilename := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
-    CheckFileExists('madExcept', madExceptFilename);
+    CheckFileExists('madExcept', fMadExceptPath);
 
-    var s := Format('cmd.exe /C ""%s" "%s""', [madExceptFilename, 'KnightsProvince.exe']);
+    var s := Format('cmd.exe /C ""%s" "%s""', [fMadExceptPath, 'KnightsProvince.exe']);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
@@ -331,9 +309,8 @@ begin
 
   if CheckTerminated then Exit;
 
-  var innoFilename := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
-  CheckFileExists('InnoSetup', innoFilename);
-  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [innoFilename]);
+  CheckFileExists('InnoSetup', fInnoSetupPath);
+  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
   var res := CaptureConsoleOutput('.\', cmdInstaller);
   fOnLog(res);
 

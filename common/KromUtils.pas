@@ -1,10 +1,14 @@
 unit KromUtils;
 interface
 
+type
+  TKMOnOutput = reference to procedure (const aMsg: string);
+
 
 function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
 procedure TerminateProcessSimple(aProcessHandle: NativeUInt);
-function CaptureConsoleOutput(const aFolder, aString: WideString): string;
+function CaptureConsoleOutput(const aFolder, aString: string): string;
+procedure CaptureConsoleOutput2(const aFolder, aString: string; aOnOutput: TKMOnOutput);
 
 
 implementation
@@ -58,7 +62,7 @@ begin
 end;
 
 
-function CaptureConsoleOutput(const aFolder, aString: WideString): string;
+function CaptureConsoleOutput(const aFolder, aString: string): string;
   function IfThen(aCondition: Boolean; aTrue, aFalse: PWideChar): PWideChar;
   begin
     if aCondition then
@@ -99,7 +103,7 @@ begin
   suiStartup.hStdOutput := hWrite;
   suiStartup.hStdError := hWrite;
   suiStartup.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-  suiStartup.wShowWindow := SW_SHOW;//SW_HIDE;
+  suiStartup.wShowWindow := SW_HIDE;
 
   piProcess := default(TProcessInformation);
 
@@ -133,6 +137,100 @@ begin
   finally
     CloseHandle(hRead);
   end;
+end;
+
+
+procedure CaptureConsoleOutput2(const aFolder, aString: string; aOnOutput: TKMOnOutput);
+  function IfThen(aCondition: Boolean; aTrue, aFalse: PWideChar): PWideChar;
+  begin
+    if aCondition then
+      Result := aTrue
+    else
+      Result := aFalse;
+  end;
+const
+  CReadBuffer = 256;
+var
+  thisFolder, thisString: WideString;
+  saSecurity: TSecurityAttributes;
+  hRead: THandle;
+  hWrite: THandle;
+  suiStartup: TStartupInfo;
+  piProcess: TProcessInformation;
+  pBuffer: array [0 .. CReadBuffer] of AnsiChar;
+  dRead: DWord;
+  dRunning: DWord;
+  textBuffer: string;
+  eolPos: Integer;
+  newLine: string;
+begin
+  // We need strings to be modifiable, since CreateProcessW plays "dirty" and crashes otherwise
+  // Hence we have to make local copy
+  thisFolder := aFolder;
+  thisString := aString;
+
+  saSecurity.nLength := SizeOf(TSecurityAttributes);
+  saSecurity.bInheritHandle := True;
+  saSecurity.lpSecurityDescriptor := nil;
+
+  if not CreatePipe(hRead, hWrite, @saSecurity, 0) then
+    RaiseLastOSError;
+
+  suiStartup := default(TStartupInfo);
+  suiStartup.cb := SizeOf(TStartupInfo);
+  suiStartup.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
+  suiStartup.hStdOutput := hWrite;
+  suiStartup.hStdError := hWrite;
+  suiStartup.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+  suiStartup.wShowWindow := SW_HIDE;
+
+  piProcess := default(TProcessInformation);
+
+  try
+    if not CreateProcessW(nil, PWideChar(thisString), @saSecurity, @saSecurity, True, CREATE_NEW_PROCESS_GROUP or NORMAL_PRIORITY_CLASS,
+      nil, IfThen(thisFolder <> '', PWideChar(thisFolder), nil), suiStartup, piProcess) then
+      RaiseLastOSError;
+
+    // Freezes without the pause ..
+    Sleep(100);
+    CloseHandle(hWrite);
+
+    try
+      repeat
+        dRunning := WaitForSingleObject(piProcess.hProcess, 100);
+
+        repeat
+          dRead := 0;
+          if ReadFile(hRead, pBuffer[0], CReadBuffer, dRead, nil) then
+          begin
+            // Terminate with zero
+            pBuffer[dRead] := #0;
+
+            // Append to incoming buffer
+            textBuffer := textBuffer + String(pBuffer);
+
+            // Split by linebreaks
+            repeat
+              eolPos := Pos(sLineBreak, textBuffer);
+              if eolPos > 0 then
+              begin
+                newLine := Copy(textBuffer, 1, eolPos-1);
+                aOnOutput(newLine);
+                textBuffer := Copy(textBuffer, eolPos+2, Length(textBuffer));
+              end;
+            until eolPos = 0;
+          end;
+        until (dRead < CReadBuffer);
+      until (dRunning <> WAIT_TIMEOUT);
+    finally
+      CloseHandle(piProcess.hProcess);
+      CloseHandle(piProcess.hThread);
+    end;
+  finally
+    CloseHandle(hRead);
+  end;
+
+  aOnOutput(textBuffer);
 end;
 
 

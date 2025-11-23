@@ -51,7 +51,11 @@ type
     procedure CopyFolder(const aPathFrom, aPathTo: string);
 
     procedure CheckFileExists(const aAppName, aFilename: string);
+    procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
+
+    procedure BuildFpc(const aProject, aExe: string);
+    procedure BuildWin(const aProject, aExe: string);
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
     procedure Perform(aConfig: Integer);
@@ -121,6 +125,14 @@ begin
 end;
 
 
+procedure TKMBuilder.CheckFolderExists(const aTitle, aFolder: string);
+begin
+  // Check that folder is available at given path
+  if not DirectoryExists(aFolder) then
+    raise Exception.Create(Format('%s not found at "%s"', [aTitle, aFolder]));
+end;
+
+
 function TKMBuilder.CheckTerminated: Boolean;
 begin
   Result := TThread.CheckTerminated;
@@ -133,7 +145,7 @@ end;
 procedure TKMBuilder.CopyFile(const aPathFrom, aPathTo: string);
 begin
   ForceDirectories(ExtractFilePath(aPathTo));
-  TFile.Copy(aPathFrom, aPathTo);
+  TFile.Copy(aPathFrom, aPathTo, True);
   fOnLog('Copied ' + ExtractFileName(aPathTo));
 end;
 
@@ -160,7 +172,7 @@ procedure TKMBuilder.CopyFilesRecursive(const aPathFrom, aPathTo, aFilter: strin
           if MatchesMask(SearchRec.Name, aFilter) then
           begin
             ForceDirectories(aPathTo);
-            TFile.Copy(aPathFrom + SearchRec.Name, aPathTo + SearchRec.Name);
+            TFile.Copy(aPathFrom + SearchRec.Name, aPathTo + SearchRec.Name, True);
 
             fOnLog(aPathFrom + SearchRec.Name);
             Inc(aCount);
@@ -242,6 +254,39 @@ begin
   var cnt := 0;
   Internal(aPath, aFilters, aAvoid, cnt);
   fOnLog(Format('Deleted %d files and folders', [cnt]));
+end;
+
+
+procedure TKMBuilder.BuildWin(const aProject, aExe: string);
+begin
+  DeleteFileIfExists(aExe);
+
+  fOnLog('Building ' + aExe);
+  begin
+    var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aProject]);
+    var s2 := CaptureConsoleOutput('.\', s);
+    fOnLog(s2);
+  end;
+
+  CheckFileExists('Resulting Windows exe', aExe);
+end;
+
+
+procedure TKMBuilder.BuildFpc(const aProject, aExe: string);
+begin
+  DeleteFileIfExists(aExe);
+
+  var fpcFilename := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
+  CheckFileExists('FPCUpDeluxe', fpcFilename);
+
+  fOnLog('Building ' + aExe);
+  begin
+    var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [fpcFilename, aProject]);
+    var res := CaptureConsoleOutput('.\', cmdFpc);
+    fOnLog(res);
+  end;
+
+  CheckFileExists('Resulting Linux binary', aExe);
 end;
 
 

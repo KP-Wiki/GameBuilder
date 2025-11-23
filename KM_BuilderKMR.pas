@@ -12,9 +12,14 @@ type
     fGameName: string;
     fGameVersion: string;
 
+    fTPRPath: string;
+    fPreviousVersionPath: string;
+    fMapsRepoPath: string;
     fPrivateRepoPath: string;
     fResourcesRepoPath: string;
+    fMadExceptPath: string;
     fPandocPath: string;
+    fInnoSetupPath: string;
 
     fBuildRevision: Integer;
     fBuildFolder: string;
@@ -25,12 +30,13 @@ type
     procedure Step02_CopyNetAuthSecure;
     procedure Step03_CleanSource;
     procedure Step04_GenerateDocs;
-    procedure Step05_BuildGameExe;
-    procedure Step06_PatchGameExe;
-    procedure Step07_PackData;
-    procedure Step08_ArrangeFolder;
-    procedure Step09_PackInstaller;
-    procedure Step10_CommitAndTag;
+    procedure Step05_CopyPrePack;
+    procedure Step06_RxPack;
+    procedure Step07_BuildGameExe;
+    procedure Step08_PatchGameExe;
+    procedure Step09_ArrangeFolder;
+    procedure Step10_PackInstaller;
+    procedure Step11_CommitAndTag;
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
@@ -54,9 +60,14 @@ begin
   fGameVersion := 'Beta';
 
   // Component and Tool paths (will be moved into INI or XML settings)
-  fPrivateRepoPath:= '..\kam_remake_private.rey\';
+  fTPRPath := '..\KaM TPR\';
+  fPreviousVersionPath := 'C:\KaM Remake Beta r15472\';
+  fMapsRepoPath := '..\kam_remake_maps.rey\';
+  fPrivateRepoPath := '..\kam_remake_private.rey\';
   fResourcesRepoPath := '..\kam_remake.rey.resources\';
+  fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
   fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
+  fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
 
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
@@ -67,14 +78,16 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step02_CopyNetAuthSecure));
   fBuildSteps.Add(TKMBuildStep.New('Clean sources',         Step03_CleanSource));
   fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step04_GenerateDocs));
-  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step05_BuildGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step06_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step07_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step08_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step09_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step10_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Copy pre-pack',         Step05_CopyPrePack));
+  fBuildSteps.Add(TKMBuildStep.New('RX pack',               Step06_RxPack));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step07_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step08_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step09_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step10_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step11_CommitAndTag));
 
-  fBuildConfigs.Add(TKMBuildConfig.Create('Installer)',  [0,1,2,3,4,5,6,7,8,9,10]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Build folder (no commit)', [0,1,2,3,4,5,6,7,8,9      ]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Installer',                [0,1,2,3,4,5,6,7,8,9,10,11]));
 end;
 
 
@@ -87,9 +100,15 @@ begin
   sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
 
   // Paths
+  sb.AppendLine('');
+  sb.AppendLine(Format('Previous build: %s', [fPreviousVersionPath]));
+  sb.AppendLine(Format('Maps repo:      %s', [fMapsRepoPath]));
+  sb.AppendLine(Format('TPR:            %s', [fTPRPath]));
   sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
   sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
+  sb.AppendLine(Format('MadExcept:      %s', [fMadExceptPath]));
   sb.AppendLine(Format('Pandoc:         %s', [fPandocPath]));
+  sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
 
   // Properties
   sb.AppendLine('');
@@ -133,6 +152,12 @@ begin
   var resResourcesPull := CaptureConsoleOutput(fResourcesRepoPath, cmdResourcesPull);
   fOnLog(resResourcesPull);
   fOnLog('Pull resources done' + sLineBreak);
+
+  fOnLog('Pull maps ..');
+  var cmdMapsPull := 'git pull';
+  var resMapsPull := CaptureConsoleOutput(fMapsRepoPath, cmdMapsPull);
+  fOnLog(resMapsPull);
+  fOnLog('Pull maps done' + sLineBreak);
 end;
 
 
@@ -164,15 +189,8 @@ begin
   var nsaSource := fPrivateRepoPath + 'src\net\KM_NetAuthSecure.pas';
   var nsaDest := '.\src\net\KM_NetAuthSecure.pas';
 
-  var szSource := TFile.GetSize(nsaSource);
   var szDest := TFile.GetSize(nsaDest);
-
-  if szSource = szDest then
-    raise Exception.Create('KM_NetAuthSecure is already there?');
-
   fOnLog(Format('Size of old - %d bytes', [szDest]));
-  DeleteFileIfExists(nsaDest);
-
   CopyFile(nsaSource, nsaDest);
   szDest := TFile.GetSize(nsaDest);
   fOnLog(Format('Size of new - %d bytes', [szDest]));
@@ -211,80 +229,104 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step05_BuildGameExe;
-  procedure BuildWin(const aProject, aExe: string);
-  begin
-    DeleteFileIfExists(aExe);
-
-    fOnLog('Building ' + aExe);
-    begin
-      var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aProject]);
-      var s2 := CaptureConsoleOutput('.\', s);
-      fOnLog(s2);
-    end;
-
-    CheckFileExists('Resulting Windows exe', aExe);
-  end;
-  procedure BuildFpc(const aProject, aExe: string);
-  begin
-    DeleteFileIfExists(aExe);
-
-    var fpcFilename := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
-    CheckFileExists('FPCUpDeluxe', fpcFilename);
-
-    fOnLog('Building ' + aExe);
-    begin
-      var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [fpcFilename, aProject]);
-      var res := CaptureConsoleOutput('.\', cmdFpc);
-      fOnLog(res);
-    end;
-
-    CheckFileExists('Resulting Linux binary', aExe);
-  end;
+procedure TKMBuilderKMR.Step05_CopyPrePack;
 begin
-  BuildWin('KnightsProvince.dproj', 'KnightsProvince.exe');
+  // Copy RX
+  CheckFolderExists('SpriteResource', fPrivateRepoPath + 'SpriteResource\');
+  CopyFilesRecursive(fPrivateRepoPath + 'SpriteResource\', fResourcesRepoPath + 'SpriteResource\', '*.rx', False);
 
-  if CheckTerminated then Exit;
+  // Copy palettes and fonts
+  CheckFolderExists('Data GFX', fPrivateRepoPath + 'data\gfx\');
+  CopyFolder(fPrivateRepoPath + 'data\gfx\', '.\data\gfx\');
 
-  BuildWin('utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+  // It is important that KMR build process requires original TPR
+  fOnLog('Copy data files from original KaM TPR game');
 
-  if CheckTerminated then Exit;
+  //todo: Verify files CRC or hash
+  //todo: Why Steam TPR houses.dat is different?
 
-  BuildWin('utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  CheckFileExists('TPR houses.dat', fTPRPath + 'data\defines\houses.dat');
+  CopyFile(fTPRPath + 'data\defines\houses.dat', '.\data\defines\houses.dat');
 
-  if CheckTerminated then Exit;
-
-  BuildWin('utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
-
-  if CheckTerminated then Exit;
-
-  BuildFpc('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
-
-  if CheckTerminated then Exit;
-
-  BuildFpc('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
+  CheckFileExists('TPR unit.dat', fTPRPath + 'data\defines\unit.dat');
+  CopyFile(fTPRPath + 'data\defines\unit.dat', '.\data\defines\unit.dat');
 end;
 
 
-procedure TKMBuilderKMR.Step06_PatchGameExe;
+procedure TKMBuilderKMR.Step06_RxPack;
 begin
-  var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
+  BuildWin('.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
+
+  if CheckTerminated then Exit;
+
+  fOnLog('RXX Pack ..');
+  // Pack rx textures to rxx
+  var cmdRxxPack := Format('cmd.exe /C ".\Utils\RXXPacker\RXXPacker.exe srx "%s" sint "%s" d ".\%s" rxa all"', [
+    fResourcesRepoPath + 'SpriteResource\', fResourcesRepoPath + 'SpriteInterp\Output\', fBuildFolder + 'data\sprites\']);
+
+  CaptureConsoleOutput2('.\', cmdRxxPack, procedure (const aMsg: string) begin fOnLog(aMsg); end);
+
+  fOnLog('RXX Pack done' + sLineBreak);
+end;
+
+
+procedure TKMBuilderKMR.Step07_BuildGameExe;
+begin
+  BuildWin('KaM_Remake.dproj', 'KaM_Remake.exe');
+
+  if CheckTerminated then Exit;
+
+  BuildWin('Utils\Campaign builder\CampaignBuilder.dproj', 'CampaignBuilder.exe');
+
+  if CheckTerminated then Exit;
+
+  BuildWin('Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'KaM_DedicatedServer.exe');
+
+  if CheckTerminated then Exit;
+
+  BuildWin('Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'KaM_DedicatedServerGUI.exe');
+
+  if CheckTerminated then Exit;
+
+  BuildWin('Utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+
+  if CheckTerminated then Exit;
+
+  BuildWin('Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'TranslationManager.exe');
+
+  if CheckTerminated then Exit;
+
+  //todo: Add ScriptingEditor as submodule
+  BuildWin('Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'ScriptingEditor.exe');
+
+  if CheckTerminated then Exit;
+
+  BuildFpc('Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86');
+
+  if CheckTerminated then Exit;
+
+  BuildFpc('Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86_64.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86_x64');
+end;
+
+
+procedure TKMBuilderKMR.Step08_PatchGameExe;
+begin
+  var exeSizeBefore := TFile.GetSize('KaM_Remake.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
 
-  fOnLog('Patching KnightsProvince.exe');
+  fOnLog('Patching KaM_Remake.exe');
   begin
-    var madExceptFilename := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
-    CheckFileExists('madExcept', madExceptFilename);
+    CheckFileExists('madExcept', fMadExceptPath);
 
-    var s := Format('cmd.exe /C ""%s" "%s""', [madExceptFilename, 'KnightsProvince.exe']);
+    var s := Format('cmd.exe /C ""%s" "%s""', [fMadExceptPath, 'KaM_Remake.exe']);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
 
   // Check that patching went well and file is still there
-  CheckFileExists('Game exe', 'KnightsProvince.exe');
+  CheckFileExists('Game exe', 'KaM_Remake.exe');
 
-  var exeSizeAfter := TFile.GetSize('KnightsProvince.exe');
+  var exeSizeAfter := TFile.GetSize('KaM_Remake.exe');
   fOnLog(Format('Size after patch - %d bytes', [exeSizeAfter]));
 
   if exeSizeAfter <= exeSizeBefore then
@@ -292,31 +334,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step07_PackData;
-begin
-  var dataPackerFilename := 'DataPacker.exe';
-  CheckFileExists('DataPacker', dataPackerFilename);
-
-  DeleteFileIfExists('data.pack');
-
-  fOnLog('Packing data.pack');
-  begin
-    var cmdDataPacker := Format('cmd.exe /C "CALL "%s" %s"', [dataPackerFilename, 'pack']);
-    var res := CaptureConsoleOutput('.\', cmdDataPacker);
-    fOnLog(res);
-  end;
-
-  CheckFileExists('Resulting data.pack', 'data.pack');
-
-  var szAfter := TFile.GetSize('data.pack');
-  fOnLog(Format('Size of data.pack - %d bytes', [szAfter]));
-
-  if szAfter <= 0 then
-    raise Exception.Create('Data.pack size is too small?');
-end;
-
-
-procedure TKMBuilderKMR.Step08_ArrangeFolder;
+procedure TKMBuilderKMR.Step09_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -326,70 +344,86 @@ begin
 
   ForceDirectories('.\' + fBuildFolder);
 
-  CopyFolder('.\campaigns\', fBuildFolder + 'campaigns\');
-  //CopyFolder('.\ExtAI', fBuildFolder + 'ExtAI\');
-  CopyFolder('.\maps\', fBuildFolder + 'maps\');
-  CopyFolder('.\mapsdev\', fBuildFolder + 'mapsdev\');
-  CopyFolder('.\mods\', fBuildFolder + 'mods\');
-  CopyFolder('.\Win32\', fBuildFolder);
+  CopyFolder('.\data\defines\', fBuildFolder + 'data\defines\');
+  CopyFolder('.\data\cursors\', fBuildFolder + 'data\cursors\');
+  CopyFolder('.\data\text\', fBuildFolder + 'data\text\');
+  CopyFile('.\data\locales.txt', fBuildFolder + 'data\locales.txt');
 
-  if CheckTerminated then Exit;
+  CopyFolder('.\Docs\Readme\Readme\', fBuildFolder + 'Readme\');
+  CopyFilesRecursive('.\Docs\Readme\Readme\', fBuildFolder + '.\', '*.html', False);
 
-  CopyFilesRecursive('.\data\', fBuildFolder + 'data\', '*.libx', True);
-  CopyFilesRecursive('.\', fBuildFolder, 'Changelog*.txt', False);
+  CopyFolder('.\Sounds\', fBuildFolder + 'Sounds\');
+  CopyFolder('.\Music\', fBuildFolder + 'Music\');
+  CopyFolder('.\lib\', fBuildFolder + 'lib\');
 
-  CopyFile('.\data\locales.xml', fBuildFolder + 'data\locales.xml');
-  CopyFile('.\data\text\text_IDs.inc', fBuildFolder + 'data\text\text_IDs.inc');
-  CopyFile('.\data.pack', fBuildFolder + 'data.pack');
+  CopyFile('.\Modding graphics\Readme.txt', fBuildFolder + 'Modding graphics\Readme.txt');
 
-  CopyFile('.\KnightsProvince.exe', fBuildFolder + 'KnightsProvince.exe');
-  CopyFile('.\raudio_x86.dll', fBuildFolder + 'raudio_x86.dll');
-  CopyFile('.\Launcher.exe', fBuildFolder + 'Launcher.exe');
-  CopyFile('.\hdiffz.dll', fBuildFolder + 'hdiffz.dll');
-  CopyFile('.\version', fBuildFolder + 'version');
 
-  if CheckTerminated then Exit;
+  CopyFolder(fMapsRepoPath + 'Campaigns\', fBuildFolder + 'Campaigns\');
+  //todo: /exclude:excluded_test_maps.txt
+  CopyFolder(fMapsRepoPath + 'Maps\', fBuildFolder + 'Maps\');
+  CopyFolder(fMapsRepoPath + 'MapsMP\', fBuildFolder + 'MapsMP\');
+  CopyFolder(fMapsRepoPath + 'Tutorials\', fBuildFolder + 'Tutorials\');
 
-  CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer.exe', fBuildFolder + 'KP_DedicatedServer.exe');
-  CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86', fBuildFolder + 'KP_DedicatedServer_Linux_x86');
-  CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64', fBuildFolder + 'KP_DedicatedServer_Linux_x64');
+  CopyFolder(fPrivateRepoPath + 'Video\', fBuildFolder + 'Video\');
+  CopyFolder(fPrivateRepoPath + 'data\', fBuildFolder + 'data\');
 
-  CopyFile('.\ScriptValidator.exe', fBuildFolder + 'ScriptValidator.exe');
-  CopyFile('.\utils\TranslationManager (from kp-wiki)\TranslationManager.exe', fBuildFolder + 'TranslationManager.exe');
+  //todo: Stop relying on previous build
+  CopyFolder(fPreviousVersionPath + 'data\sfx\', fBuildFolder + 'data\sfx\');
+  CopyFolder(fPreviousVersionPath + 'Music\', fBuildFolder + 'Music\');
+  CopyFilesRecursive(fPreviousVersionPath + 'Campaigns\', fBuildFolder + 'Campaigns\', '*.mp3', True);
+
+  // Delete all count.dat files from sfx folders recursively, they are temp game files
+  DeleteRecursive(fBuildFolder + 'data\sfx\', ['count.dat'], []);
+
+  // Copy selected executable files
+  CopyFile('.\KaM_Remake.exe', fBuildFolder + 'KaM_Remake.exe');
+  CopyFile('.\bass.dll', fBuildFolder + 'bass.dll');
+  CopyFile('.\ogg.dll', fBuildFolder + 'ogg.dll');
+  CopyFile('.\vorbis.dll', fBuildFolder + 'vorbis.dll');
+  CopyFile('.\vorbisfile.dll', fBuildFolder + 'vorbisfile.dll');
+  CopyFile('.\OpenAL32.dll', fBuildFolder + 'OpenAL32.dll');
+  CopyFile('.\Installer\uninst_clean.bat', fBuildFolder + 'uninst_clean.bat');
+  CopyFile('.\Installer\oalinst.exe', fBuildFolder + 'oalinst.exe');
+
+  //todo: Copy Scripting Editor
+
+  // copy utility applications exe files
+  CopyFile('.\KM_TextIDs.inc', fBuildFolder + 'Utils\KM_TextIDs.inc');
+  CopyFile('.\Utils\Campaign builder\KaM_Remake_Settings_ini_readme.txt', fBuildFolder + 'Utils\KaM_Remake_Settings_ini_readme.txt');
+  CopyFile('.\Utils\Campaign builder\CampaignBuilder.exe', fBuildFolder + 'Utils\CampaignBuilder.exe');
+  CopyFile('.\Utils\DedicatedServer\KaM_DedicatedServer.exe', fBuildFolder + 'Utils\KaM_Remake_Server_win32.exe');
+  CopyFile('.\Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe', fBuildFolder + 'Utils\KaM_Remake_ServerGUI_win32.exe');
+  CopyFile('.\Utils\ScriptValidator\ScriptValidator.exe', fBuildFolder + 'Utils\ScriptValidator.exe');
+  CopyFile('.\Utils\TranslationManager (from kp-wiki)\TranslationManager.exe', fBuildFolder + 'Utils\TranslationManager.exe');
+
+  // copy linux dedicated servers
+  CopyFile('.\Utils\DedicatedServer\KaM_Remake_Server_linux_x86', fBuildFolder + 'Utils\KaM_Remake_Server_linux_x86');
+  CopyFile('.\Utils\DedicatedServer\KaM_Remake_Server_linux_x86_64', fBuildFolder + 'Utils\KaM_Remake_Server_linux_x86_64');
 end;
 
 
-procedure TKMBuilderKMR.Step09_PackInstaller;
+procedure TKMBuilderKMR.Step10_PackInstaller;
 begin
   var installerName := ChangeFileExt(fBuildResultInstaller, '');
+
+  CheckFileExists('Installer secret', fPrivateRepoPath + 'Installer\CheckKaM.iss');
+
+  CopyFile(fPrivateRepoPath + 'Installer\CheckKaM.iss', '.\Installer\CheckKaM.iss');
 
   // Delete old installer if we had it for some reason
   DeleteFileIfExists(fBuildResultInstaller);
 
   var sl := TStringList.Create;
-  sl.Append('; REVISION (write into Registry)');
-  sl.Append(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
-  sl.Append('');
-  sl.Append('; Folder from where files get taken');
-  sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [fBuildFolder]));
-  sl.Append('');
-  sl.Append('; How the installer executable will be named');
-  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [installerName]));
-  sl.Append('');
-  sl.Append('; Application name used in many places');
-  sl.Append(Format('#define MyAppName '#39'%s'#39, [installerName]));
-  sl.Append('');
-  sl.Append(Format('#define MyAppExeName '#39'%s'#39, ['KnightsProvince.exe']));
-  sl.Append(Format('#define Website '#39'%s'#39, ['http://www.knightsprovince.com/']));
-
-  sl.SaveToFile('.\installer\Constants.iss');
+  sl.Append(Format('#define BuildFolder '#39'%s'#39, [fBuildFolder]));
+  //todo: Seems to be unused sl.Append(Format('#define OutputFolder '#39'%s'#39, []));
+  sl.SaveToFile('.\Installer\Constants_local.iss');
   sl.Free;
 
   if CheckTerminated then Exit;
 
-  var innoFilename := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
-  CheckFileExists('InnoSetup', innoFilename);
-  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [innoFilename]);
+  CheckFileExists('InnoSetup', fInnoSetupPath);
+  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
   var res := CaptureConsoleOutput('.\', cmdInstaller);
   fOnLog(res);
 
@@ -401,7 +435,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step10_CommitAndTag;
+procedure TKMBuilderKMR.Step11_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
