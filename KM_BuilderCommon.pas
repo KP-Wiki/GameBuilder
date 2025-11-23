@@ -54,12 +54,12 @@ type
     procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
 
-    procedure BuildFpc(const aProject, aExe: string);
-    procedure BuildWin(const aProject, aExe: string);
+    procedure BuildWin(const aRSVars, aProject, aExe: string);
+    procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
-    procedure Perform(aConfig: Integer);
-    procedure PerformStep(aStep: Integer);
+    procedure ExecuteConfig(aConfig: Integer);
+    procedure ExecuteStep(aStep: Integer);
     procedure Stop;
 
     function GetInfo: string; virtual; abstract;
@@ -257,36 +257,36 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWin(const aProject, aExe: string);
+procedure TKMBuilder.BuildWin(const aRSVars, aProject, aExe: string);
 begin
   DeleteFileIfExists(aExe);
+  CheckFileExists('RSVars', aRSVars);
 
   fOnLog('Building ' + aExe);
   begin
-    var s := Format('cmd.exe /C "CALL bat_rsvars.bat && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aProject]);
+    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aProject]);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
 
-  CheckFileExists('Resulting Windows exe', aExe);
+  CheckFileExists('Resulting exe', aExe);
 end;
 
 
-procedure TKMBuilder.BuildFpc(const aProject, aExe: string);
+procedure TKMBuilder.BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
 begin
   DeleteFileIfExists(aExe);
 
-  var fpcFilename := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
-  CheckFileExists('FPCUpDeluxe', fpcFilename);
+  CheckFileExists('FPCUPdeluxe', aFpcUpDeluxe);
 
   fOnLog('Building ' + aExe);
   begin
-    var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [fpcFilename, aProject]);
+    var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [aFpcUpDeluxe, aProject]);
     var res := CaptureConsoleOutput('.\', cmdFpc);
     fOnLog(res);
   end;
 
-  CheckFileExists('Resulting Linux binary', aExe);
+  CheckFileExists('Resulting binary', aExe);
 end;
 
 
@@ -320,7 +320,7 @@ begin
 end;
 
 
-procedure TKMBuilder.Perform(aConfig: Integer);
+procedure TKMBuilder.ExecuteConfig(aConfig: Integer);
 var
   thisConfig: Integer;
 begin
@@ -356,7 +356,7 @@ begin
 end;
 
 
-procedure TKMBuilder.PerformStep(aStep: Integer);
+procedure TKMBuilder.ExecuteStep(aStep: Integer);
 var
   thisStep: Integer;
 begin

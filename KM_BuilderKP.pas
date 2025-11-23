@@ -12,6 +12,8 @@ type
     fGameName: string;
     fGameVersion: string;
 
+    fRSVarsPath: string;
+    fFPCUPdeluxePath: string;
     fMadExceptPath: string;
     f7zipPath: string;
     fInnoSetupPath: string;
@@ -49,12 +51,14 @@ uses
 constructor TKMBuilderKP.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
-  
+
   // Builder constants
   fGameName := 'Knights Province';
   fGameVersion := 'Alpha 13 wip';
 
   // Component and Tool paths (will be moved into INI or XML settings)
+  fRSVarsPath := 'bat_rsvars.bat';
+  fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
   f7zipPath := 'C:\Program Files\7-Zip\7z.exe';
   fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
@@ -91,7 +95,9 @@ begin
 
   // Paths
   sb.AppendLine('');
-  sb.AppendLine(Format('MadExcept:      %s', [fMadExceptPath]));
+  sb.AppendLine(Format('RSVars:         %s', [fRSVarsPath]));
+  sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFpcUpDeluxePath]));
+  sb.AppendLine(Format('madExcept:      %s', [fMadExceptPath]));
   sb.AppendLine(Format('7-zip:          %s', [f7zipPath]));
   sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
 
@@ -148,27 +154,27 @@ end;
 
 procedure TKMBuilderKP.Step02_BuildGameExe;
 begin
-  BuildWin('KnightsProvince.dproj', 'KnightsProvince.exe');
+  BuildWin(fRSVarsPath, 'KnightsProvince.dproj', 'KnightsProvince.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+  BuildWin(fRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+  BuildWin(fRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildFpc('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
+  BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
 
   if CheckTerminated then Exit;
 
-  BuildFpc('utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
+  BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
 end;
 
 

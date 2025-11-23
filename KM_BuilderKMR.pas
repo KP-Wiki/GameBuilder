@@ -17,6 +17,8 @@ type
     fMapsRepoPath: string;
     fPrivateRepoPath: string;
     fResourcesRepoPath: string;
+    fRSVarsPath: string;
+    fFPCUPdeluxePath: string;
     fMadExceptPath: string;
     fPandocPath: string;
     fInnoSetupPath: string;
@@ -65,6 +67,8 @@ begin
   fMapsRepoPath := '..\kam_remake_maps.rey\';
   fPrivateRepoPath := '..\kam_remake_private.rey\';
   fResourcesRepoPath := '..\kam_remake.rey.resources\';
+  fRSVarsPath := 'bat_rsvars.bat';
+  fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
   fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
   fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
@@ -106,7 +110,10 @@ begin
   sb.AppendLine(Format('TPR:            %s', [fTPRPath]));
   sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
   sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
-  sb.AppendLine(Format('MadExcept:      %s', [fMadExceptPath]));
+
+  sb.AppendLine(Format('RSVars:         %s', [fRSVarsPath]));
+  sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFpcUpDeluxePath]));
+  sb.AppendLine(Format('madExcept:      %s', [fMadExceptPath]));
   sb.AppendLine(Format('Pandoc:         %s', [fPandocPath]));
   sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
 
@@ -255,7 +262,7 @@ end;
 
 procedure TKMBuilderKMR.Step06_RxPack;
 begin
-  BuildWin('.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
+  BuildWin(fRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
 
   if CheckTerminated then Exit;
 
@@ -272,40 +279,40 @@ end;
 
 procedure TKMBuilderKMR.Step07_BuildGameExe;
 begin
-  BuildWin('KaM_Remake.dproj', 'KaM_Remake.exe');
+  BuildWin(fRSVarsPath, 'KaM_Remake.dproj', 'KaM_Remake.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('Utils\Campaign builder\CampaignBuilder.dproj', 'CampaignBuilder.exe');
+  BuildWin(fRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', 'CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'KaM_DedicatedServer.exe');
+  BuildWin(fRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'KaM_DedicatedServerGUI.exe');
+  BuildWin(fRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('Utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+  BuildWin(fRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin('Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'TranslationManager.exe');
+  BuildWin(fRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
   //todo: Add ScriptingEditor as submodule
-  BuildWin('Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'ScriptingEditor.exe');
+  BuildWin(fRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'ScriptingEditor.exe');
 
   if CheckTerminated then Exit;
 
-  BuildFpc('Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86');
+  BuildFpc(fFPCUPdeluxePath, 'Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86');
 
   if CheckTerminated then Exit;
 
-  BuildFpc('Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86_64.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86_x64');
+  BuildFpc(fFPCUPdeluxePath, 'Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86_64.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86_x64');
 end;
 
 

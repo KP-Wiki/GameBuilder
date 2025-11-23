@@ -99,6 +99,7 @@
         <DCCReference Include="UnitBuilder.pas">
             <Form>Form1</Form>
         </DCCReference>
+        <DCCReference Include="KM_BuilderCommon.pas"/>
         <DCCReference Include="KM_BuilderKMR.pas"/>
         <DCCReference Include="KM_BuilderKP.pas"/>
         <BuildConfiguration Include="Base">

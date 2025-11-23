@@ -198,7 +198,7 @@ begin
   for var I := 0 to fBuilder.GetStepCount - 1 do
     fStepPanel[I].Color := $808080;
 
-  fBuilder.Perform(buildConfig);
+  fBuilder.ExecuteConfig(buildConfig);
 end;
 
 
@@ -212,7 +212,7 @@ begin
 
   ControlsEnable(False);
   var step := TButton(Sender).Tag;
-  fBuilder.PerformStep(step);
+  fBuilder.ExecuteStep(step);
 end;
 
 
