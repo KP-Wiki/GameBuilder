@@ -1,7 +1,6 @@
 unit KM_BuilderKMR;
 interface
 uses
-  System.Classes,
   System.SysUtils,
   KM_BuilderCommon;
 
@@ -48,6 +47,7 @@ type
 
 implementation
 uses
+  System.Classes,
   System.IOUtils, System.DateUtils,
   KromUtils;
 
@@ -67,7 +67,7 @@ begin
   fMapsRepoPath := '..\kam_remake_maps.rey\';
   fPrivateRepoPath := '..\kam_remake_private.rey\';
   fResourcesRepoPath := '..\kam_remake.rey.resources\';
-  fRSVarsPath := 'bat_rsvars.bat';
+  fRSVarsPath := '.\bat_rsvars.bat';
   fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
   fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
@@ -112,7 +112,7 @@ begin
   sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
 
   sb.AppendLine(Format('RSVars:         %s', [fRSVarsPath]));
-  sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFpcUpDeluxePath]));
+  sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFPCUPdeluxePath]));
   sb.AppendLine(Format('madExcept:      %s', [fMadExceptPath]));
   sb.AppendLine(Format('Pandoc:         %s', [fPandocPath]));
   sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
@@ -215,6 +215,11 @@ begin
   DeleteRecursive(ExpandFileName('.\'), [
     '*.~*', '*.ddp', '*.drc', '*.dcp', '*.dcu', '*.dsk', '*.o', '*.or', '*.ppu', '*.compiled', '*.local', '*.tmp', '*.log',
     'thumbs.db', 'descript.ion', 'bugreport.txt', '*.skincfg', '*.identcache', '*.tvsconfig', '*.mi', '*.log.txt', '*.stat', '*.bak'], ['.git']);
+
+  if CheckTerminated then Exit;
+
+  // Delete all count.dat files from sfx folders recursively, they are temp game files
+  DeleteRecursive(ExpandFileName('.\data\sfx\'), ['count.dat'], []);
 end;
 
 
@@ -283,36 +288,37 @@ begin
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', 'CampaignBuilder.exe');
+  BuildWin(fRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', 'Utils\Campaign builder\CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'KaM_DedicatedServer.exe');
+  BuildWin(fRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'KaM_DedicatedServerGUI.exe');
+  BuildWin(fRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+  //todo: Fails to build in "Release" configuration
+  //BuildWin(fRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'TranslationManager.exe');
+  BuildWin(fRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
   //todo: Add ScriptingEditor as submodule
-  BuildWin(fRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'ScriptingEditor.exe');
+  //BuildWin(fRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe');
 
   if CheckTerminated then Exit;
 
-  BuildFpc(fFPCUPdeluxePath, 'Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86');
+  BuildFpc(fFPCUPdeluxePath, 'Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86.lpi', 'Utils\DedicatedServer\KaM_Remake_Server_linux_x86');
 
   if CheckTerminated then Exit;
 
-  BuildFpc(fFPCUPdeluxePath, 'Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86_64.lpi', 'Utils\DedicatedServer\KaM_DedicatedServer_Linux_x86_x64');
+  BuildFpc(fFPCUPdeluxePath, 'Utils\DedicatedServer\KaM_DedicatedServer_win32-linux_x86_64.lpi', 'Utils\DedicatedServer\KaM_Remake_Server_linux_x86_64');
 end;
 
 
@@ -380,28 +386,29 @@ begin
   CopyFolder(fPreviousVersionPath + 'Music\', fBuildFolder + 'Music\');
   CopyFilesRecursive(fPreviousVersionPath + 'Campaigns\', fBuildFolder + 'Campaigns\', '*.mp3', True);
 
-  // Delete all count.dat files from sfx folders recursively, they are temp game files
-  DeleteRecursive(fBuildFolder + 'data\sfx\', ['count.dat'], []);
-
   // Copy selected executable files
   CopyFile('.\KaM_Remake.exe', fBuildFolder + 'KaM_Remake.exe');
   CopyFile('.\bass.dll', fBuildFolder + 'bass.dll');
   CopyFile('.\ogg.dll', fBuildFolder + 'ogg.dll');
   CopyFile('.\vorbis.dll', fBuildFolder + 'vorbis.dll');
   CopyFile('.\vorbisfile.dll', fBuildFolder + 'vorbisfile.dll');
-  CopyFile('.\OpenAL32.dll', fBuildFolder + 'OpenAL32.dll');
+  CopyFile('.\Utils\AVIPlayer\OpenAL32.dll', fBuildFolder + 'OpenAL32.dll');
   CopyFile('.\Installer\uninst_clean.bat', fBuildFolder + 'uninst_clean.bat');
   CopyFile('.\Installer\oalinst.exe', fBuildFolder + 'oalinst.exe');
 
   //todo: Copy Scripting Editor
+  //Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe
 
   // copy utility applications exe files
   CopyFile('.\KM_TextIDs.inc', fBuildFolder + 'Utils\KM_TextIDs.inc');
-  CopyFile('.\Utils\Campaign builder\KaM_Remake_Settings_ini_readme.txt', fBuildFolder + 'Utils\KaM_Remake_Settings_ini_readme.txt');
+  CopyFile('.\KaM_Remake_Settings_ini_readme.txt', fBuildFolder + 'Utils\KaM_Remake_Settings_ini_readme.txt');
   CopyFile('.\Utils\Campaign builder\CampaignBuilder.exe', fBuildFolder + 'Utils\CampaignBuilder.exe');
   CopyFile('.\Utils\DedicatedServer\KaM_DedicatedServer.exe', fBuildFolder + 'Utils\KaM_Remake_Server_win32.exe');
   CopyFile('.\Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe', fBuildFolder + 'Utils\KaM_Remake_ServerGUI_win32.exe');
-  CopyFile('.\Utils\ScriptValidator\ScriptValidator.exe', fBuildFolder + 'Utils\ScriptValidator.exe');
+
+  //todo: Fails to build in "Release" configuration
+  //CopyFile('.\Utils\ScriptValidator\ScriptValidator.exe', fBuildFolder + 'Utils\ScriptValidator.exe');
+
   CopyFile('.\Utils\TranslationManager (from kp-wiki)\TranslationManager.exe', fBuildFolder + 'Utils\TranslationManager.exe');
 
   // copy linux dedicated servers
@@ -412,8 +419,6 @@ end;
 
 procedure TKMBuilderKMR.Step10_PackInstaller;
 begin
-  var installerName := ChangeFileExt(fBuildResultInstaller, '');
-
   CheckFileExists('Installer secret', fPrivateRepoPath + 'Installer\CheckKaM.iss');
 
   CopyFile(fPrivateRepoPath + 'Installer\CheckKaM.iss', '.\Installer\CheckKaM.iss');
@@ -422,8 +427,9 @@ begin
   DeleteFileIfExists(fBuildResultInstaller);
 
   var sl := TStringList.Create;
-  sl.Append(Format('#define BuildFolder '#39'%s'#39, [fBuildFolder]));
-  //todo: Seems to be unused sl.Append(Format('#define OutputFolder '#39'%s'#39, []));
+  // Folders are relative to ".\Installer\"
+  sl.Append(Format('#define BuildFolder '#39'%s'#39, ['..\' + fBuildFolder]));
+  sl.Append(Format('#define OutputFolder '#39'%s'#39, ['..\']));
   sl.SaveToFile('.\Installer\Constants_local.iss');
   sl.Free;
 

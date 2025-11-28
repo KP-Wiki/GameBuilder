@@ -1,7 +1,6 @@
 unit KM_BuilderKP;
 interface
 uses
-  System.Classes,
   System.SysUtils,
   KM_BuilderCommon;
 
@@ -45,6 +44,7 @@ type
 
 implementation
 uses
+  System.Classes,
   System.IOUtils, System.DateUtils,
   KromUtils;
 
