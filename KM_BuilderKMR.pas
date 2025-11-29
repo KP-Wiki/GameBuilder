@@ -278,10 +278,17 @@ begin
 
   if CheckTerminated then Exit;
 
+  TDirectory.Delete('.\data\sprites\', True);
+
+  if CheckTerminated then Exit;
+
   fOnLog('RXX Pack ..');
   // Pack rx textures to rxx
   var cmdRxxPack := Format('cmd.exe /C ".\Utils\RXXPacker\RXXPacker.exe srx "%s" sint "%s" d ".\%s" rxa all"', [
-    fResourcesRepoPath + 'SpriteResource\', fResourcesRepoPath + 'SpriteInterp\Output\', fBuildFolder + 'data\sprites\']);
+    fResourcesRepoPath + 'SpriteResource\',       // Source RX
+    fResourcesRepoPath + 'SpriteInterp\Output\',  // Source interpolated
+    '.\data\sprites\'                             // Destination
+    ]);
 
   CaptureConsoleOutput2('.\', cmdRxxPack, procedure (const aMsg: string) begin fOnLog(aMsg); end);
 
@@ -367,9 +374,10 @@ begin
   CopyFolder('.\data\defines\', fBuildFolder + 'data\defines\');
   CopyFolder('.\data\cursors\', fBuildFolder + 'data\cursors\');
   CopyFolder('.\data\text\', fBuildFolder + 'data\text\');
+  CopyFolder('.\data\sprites\', fBuildFolder + 'data\sprites\');
   CopyFile('.\data\locales.txt', fBuildFolder + 'data\locales.txt');
 
-  CopyFolder('.\Docs\Readme\Readme\', fBuildFolder + 'Readme\');
+  CopyFilesRecursive('.\Docs\Readme\Readme\', fBuildFolder + 'Readme\', '*.gif', False);
   CopyFilesRecursive('.\Docs\Readme\', fBuildFolder + '.\', '*.html', False);
 
   CopyFolder('.\Sounds\', fBuildFolder + 'Sounds\');
@@ -384,8 +392,9 @@ begin
   CopyFolder(fMapsRepoPath + 'MapsMP\', fBuildFolder + 'MapsMP\');
   CopyFolder(fMapsRepoPath + 'Tutorials\', fBuildFolder + 'Tutorials\');
 
-  CopyFolder(fPrivateRepoPath + 'Video\', fBuildFolder + 'Video\');
   CopyFolder(fPrivateRepoPath + 'data\', fBuildFolder + 'data\');
+  CopyFolder(fPrivateRepoPath + 'Video\Campaigns\', fBuildFolder + 'Campaigns\');
+  CopyFolder(fPrivateRepoPath + 'Video\data\', fBuildFolder + 'data\');
 
   //todo: Stop relying on previous build
   CopyFolder(fPreviousVersionPath + 'data\sfx\', fBuildFolder + 'data\sfx\');
