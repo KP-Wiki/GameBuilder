@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Game Builder'
-  ClientHeight = 617
+  ClientHeight = 681
   ClientWidth = 1074
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     1074
-    617)
+    681)
   TextHeight = 15
   object Label1: TLabel
     Left = 312
@@ -24,7 +24,7 @@ object Form1: TForm1
   end
   object Label2: TLabel
     Left = 312
-    Top = 248
+    Top = 328
     Width = 50
     Height = 15
     Caption = 'Build log:'
@@ -38,16 +38,16 @@ object Form1: TForm1
   end
   object Label4: TLabel
     Left = 16
-    Top = 96
+    Top = 128
     Width = 31
     Height = 15
     Caption = 'Steps:'
   end
   object meLog: TMemo
     Left = 312
-    Top = 264
+    Top = 344
     Width = 746
-    Height = 337
+    Height = 321
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -55,7 +55,7 @@ object Form1: TForm1
     Anchors = [akLeft, akTop, akRight, akBottom]
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -13
+    Font.Height = -12
     Font.Name = 'Courier New'
     Font.Style = []
     ParentFont = False
@@ -64,7 +64,7 @@ object Form1: TForm1
   end
   object btnStop: TButton
     Left = 16
-    Top = 576
+    Top = 640
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -77,9 +77,9 @@ object Form1: TForm1
   end
   object pnlBuildStep: TPanel
     Left = 16
-    Top = 112
+    Top = 144
     Width = 289
-    Height = 401
+    Height = 481
     BevelOuter = bvNone
     Caption = '<Builder steps. Filled in dynamically>'
     Color = clMaroon
@@ -89,7 +89,7 @@ object Form1: TForm1
     Left = 16
     Top = 32
     Width = 289
-    Height = 57
+    Height = 89
     BevelOuter = bvNone
     Caption = '<Builder configurations. Filled in dynamically>'
     TabOrder = 3
@@ -98,7 +98,7 @@ object Form1: TForm1
     Left = 312
     Top = 32
     Width = 746
-    Height = 209
+    Height = 289
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -106,7 +106,7 @@ object Form1: TForm1
     Anchors = [akLeft, akTop, akRight]
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -13
+    Font.Height = -12
     Font.Name = 'Courier New'
     Font.Style = []
     ParentFont = False

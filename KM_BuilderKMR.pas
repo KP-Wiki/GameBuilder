@@ -16,7 +16,7 @@ type
     fMapsRepoPath: string;
     fPrivateRepoPath: string;
     fResourcesRepoPath: string;
-    fRSVarsPath: string;
+    fDelphiRSVarsPath: string;
     fFPCUPdeluxePath: string;
     fMadExceptPath: string;
     fPandocPath: string;
@@ -61,13 +61,15 @@ begin
   fGameName := 'KaM Remake';
   fGameVersion := 'Beta';
 
-  // Component and Tool paths (will be moved into INI or XML settings)
+  // Component paths (will be moved into INI or XML settings)
   fTPRPath := '..\KaM TPR\';
   fPreviousVersionPath := 'C:\KaM Remake Beta r15472\';
   fMapsRepoPath := '..\kam_remake_maps.rey\';
   fPrivateRepoPath := '..\kam_remake_private.rey\';
   fResourcesRepoPath := '..\kam_remake.rey.resources\';
-  fRSVarsPath := '.\bat_rsvars.bat';
+
+  // Thirdparty apps
+  fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
   fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
   fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
@@ -103,7 +105,7 @@ begin
   sb.AppendLine(Format('Game name:      %s', [fGameName]));
   sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
 
-  // Paths
+  // Component paths
   sb.AppendLine('');
   sb.AppendLine(Format('Previous build: %s', [fPreviousVersionPath]));
   sb.AppendLine(Format('Maps repo:      %s', [fMapsRepoPath]));
@@ -111,7 +113,9 @@ begin
   sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
   sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
 
-  sb.AppendLine(Format('RSVars:         %s', [fRSVarsPath]));
+  // Thirdparty apps
+  sb.AppendLine('');
+  sb.AppendLine(Format('Delphi rsvars:  %s', [fDelphiRSVarsPath]));
   sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFPCUPdeluxePath]));
   sb.AppendLine(Format('madExcept:      %s', [fMadExceptPath]));
   sb.AppendLine(Format('Pandoc:         %s', [fPandocPath]));
@@ -123,7 +127,7 @@ begin
   sb.AppendLine(Format('Folder:         %s', [fBuildFolder]));
   sb.AppendLine(Format('Installer:      %s', [fBuildResultInstaller]));
 
-  Result := sb.ToString;
+  Result := Trim(sb.ToString);
   sb.Free;
 end;
 
@@ -207,11 +211,13 @@ end;
 procedure TKMBuilderKMR.Step03_DeleteTempFiles;
 begin
   // Delete folders
+  fOnLog('Deleting temp folders ..');
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
 
   if CheckTerminated then Exit;
 
   // Delete files
+  fOnLog('Deleting temp files ..');
   DeleteRecursive(ExpandFileName('.\'), [
     '*.~*', '*.ddp', '*.drc', '*.dcp', '*.dcu', '*.dsk', '*.o', '*.or', '*.ppu', '*.compiled', '*.local', '*.tmp', '*.log',
     'thumbs.db', 'descript.ion', 'bugreport.txt', '*.skincfg', '*.identcache', '*.tvsconfig', '*.mi', '*.log.txt', '*.stat', '*.bak'], ['.git']);
@@ -219,6 +225,7 @@ begin
   if CheckTerminated then Exit;
 
   // Delete all count.dat files from sfx folders recursively, they are temp game files
+  fOnLog('Deleting sfx\count.dat');
   DeleteRecursive(ExpandFileName('.\data\sfx\'), ['count.dat'], []);
 end;
 
@@ -267,7 +274,7 @@ end;
 
 procedure TKMBuilderKMR.Step06_RxxPack;
 begin
-  BuildWin(fRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
+  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
 
   if CheckTerminated then Exit;
 
@@ -284,33 +291,33 @@ end;
 
 procedure TKMBuilderKMR.Step07_BuildGameExe;
 begin
-  BuildWin(fRSVarsPath, 'KaM_Remake.dproj', 'KaM_Remake.exe');
+  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', 'KaM_Remake.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', 'Utils\Campaign builder\CampaignBuilder.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', 'Utils\Campaign builder\CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
   //todo: Fails to build in "Release" configuration
-  //BuildWin(fRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'Utils\ScriptValidator\ScriptValidator.exe');
+  //BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
   //todo: Add ScriptingEditor as submodule
-  //BuildWin(fRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe');
+  //BuildWin(fDelphiRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe');
 
   if CheckTerminated then Exit;
 
@@ -363,14 +370,13 @@ begin
   CopyFile('.\data\locales.txt', fBuildFolder + 'data\locales.txt');
 
   CopyFolder('.\Docs\Readme\Readme\', fBuildFolder + 'Readme\');
-  CopyFilesRecursive('.\Docs\Readme\Readme\', fBuildFolder + '.\', '*.html', False);
+  CopyFilesRecursive('.\Docs\Readme\', fBuildFolder + '.\', '*.html', False);
 
   CopyFolder('.\Sounds\', fBuildFolder + 'Sounds\');
   CopyFolder('.\Music\', fBuildFolder + 'Music\');
   CopyFolder('.\lib\', fBuildFolder + 'lib\');
 
   CopyFile('.\Modding graphics\Readme.txt', fBuildFolder + 'Modding graphics\Readme.txt');
-
 
   CopyFolder(fMapsRepoPath + 'Campaigns\', fBuildFolder + 'Campaigns\');
   //todo: /exclude:excluded_test_maps.txt
@@ -426,12 +432,17 @@ begin
   // Delete old installer if we had it for some reason
   DeleteFileIfExists(fBuildResultInstaller);
 
-  var sl := TStringList.Create;
+  var slConstants := TStringList.Create;
   // Folders are relative to ".\Installer\"
-  sl.Append(Format('#define BuildFolder '#39'%s'#39, ['..\' + fBuildFolder]));
-  sl.Append(Format('#define OutputFolder '#39'%s'#39, ['..\']));
-  sl.SaveToFile('.\Installer\Constants_local.iss');
-  sl.Free;
+  slConstants.Append(Format('#define BuildFolder '#39'%s'#39, ['..\' + fBuildFolder]));
+  slConstants.Append(Format('#define OutputFolder '#39'%s'#39, ['..\']));
+  slConstants.SaveToFile('.\Installer\Constants_local.iss');
+  slConstants.Free;
+
+  var slRevision := TStringList.Create;
+  slRevision.Append(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
+  slRevision.SaveToFile('.\Installer\Revision.iss');
+  slRevision.Free;
 
   if CheckTerminated then Exit;
 

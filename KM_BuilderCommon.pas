@@ -239,7 +239,7 @@ procedure TKMBuilder.DeleteRecursive(const aPath: string; const aFilters: array 
           else
             TFile.Delete(fullName);
 
-          fOnLog(fullName);
+          fOnLog(Format('Deleted "%s"', [fullName]));
           Inc(aCount);
         end;
 

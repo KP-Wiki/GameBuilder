@@ -11,7 +11,7 @@ type
     fGameName: string;
     fGameVersion: string;
 
-    fRSVarsPath: string;
+    fDelphiRSVarsPath: string;
     fFPCUPdeluxePath: string;
     fMadExceptPath: string;
     f7zipPath: string;
@@ -58,8 +58,8 @@ begin
   fGameName := 'Knights Province';
   fGameVersion := 'Alpha 13 wip';
 
-  // Component and Tool paths (will be moved into INI or XML settings)
-  fRSVarsPath := 'bat_rsvars.bat';
+  // Thirdparty apps
+  fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
   fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
   f7zipPath := 'C:\Program Files\7-Zip\7z.exe';
@@ -95,10 +95,10 @@ begin
   sb.AppendLine(Format('Game name:      %s', [fGameName]));
   sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
 
-  // Paths
+  // Thirdparty apps
   sb.AppendLine('');
-  sb.AppendLine(Format('RSVars:         %s', [fRSVarsPath]));
-  sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFpcUpDeluxePath]));
+  sb.AppendLine(Format('Delphi rsvars:  %s', [fDelphiRSVarsPath]));
+  sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFPCUPdeluxePath]));
   sb.AppendLine(Format('madExcept:      %s', [fMadExceptPath]));
   sb.AppendLine(Format('7-zip:          %s', [f7zipPath]));
   sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
@@ -110,7 +110,7 @@ begin
   sb.AppendLine(Format('7-zip package:  %s', [fBuildResult7zip]));
   sb.AppendLine(Format('Installer:      %s', [fBuildResultInstaller]));
 
-  Result := sb.ToString;
+  Result := Trim(sb.ToString);
   sb.Free;
 end;
 
@@ -143,11 +143,13 @@ end;
 procedure TKMBuilderKP.Step01_DeleteTempFiles;
 begin
   // Delete folders
+  fOnLog('Deleting temp folders ..');
   DeleteRecursive(ExpandFileName('.\'), ['__history', '__recovery', 'backup', 'logs', 'dcu'], ['.git']);
 
   if CheckTerminated then Exit;
 
   // Delete files
+  fOnLog('Deleting temp files ..');
   DeleteRecursive(ExpandFileName('.\'), [
     '*.~*', '*.ddp', '*.drc', '*.dcp', '*.dcu', '*.dsk', '*.o', '*.or', '*.ppu', '*.compiled', '*.local', '*.tmp', '*.log',
     'thumbs.db', 'descript.ion', 'bugreport.txt', '*.skincfg', '*.identcache', '*.tvsconfig', '*.mi', '*.log.txt', '*.stat', '*.bak'], ['.git']);
@@ -156,19 +158,19 @@ end;
 
 procedure TKMBuilderKP.Step02_BuildGameExe;
 begin
-  BuildWin(fRSVarsPath, 'KnightsProvince.dproj', 'KnightsProvince.exe');
+  BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', 'KnightsProvince.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
