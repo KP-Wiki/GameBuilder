@@ -440,24 +440,21 @@ begin
   // Delete old installer if we had it for some reason
   DeleteFileIfExists(fBuildResultInstaller);
 
-  var slConstants := TStringList.Create;
+  var swConstants := TStreamWriter.Create('.\Installer\Constants_local.iss');
   // Folders are relative to ".\Installer\"
-  slConstants.Append(Format('#define BuildFolder '#39'%s'#39, ['..\' + fBuildFolder]));
-  slConstants.Append(Format('#define OutputFolder '#39'%s'#39, ['..\']));
-  slConstants.SaveToFile('.\Installer\Constants_local.iss');
-  slConstants.Free;
+  swConstants.WriteLine(Format('#define BuildFolder '#39'%s'#39, ['..\' + fBuildFolder]));
+  swConstants.WriteLine(Format('#define OutputFolder '#39'%s'#39, ['..\']));
+  swConstants.Free;
 
-  var slRevision := TStringList.Create;
-  slRevision.Append(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
-  slRevision.SaveToFile('.\Installer\Revision.iss');
-  slRevision.Free;
+  var swRevision := TStreamWriter.Create('.\Installer\Revision.iss');
+  swRevision.WriteLine(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
+  swRevision.Free;
 
   if CheckTerminated then Exit;
 
   CheckFileExists('InnoSetup', fInnoSetupPath);
   var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
-  var res := CaptureConsoleOutput('.\', cmdInstaller);
-  fOnLog(res);
+  CaptureConsoleOutput2('.\', cmdInstaller, procedure (const aMsg: string) begin fOnLog(aMsg); end);
 
   var szAfter := TFile.GetSize(fBuildResultInstaller);
   fOnLog(Format('Size of "%s" - %d bytes', [fBuildResultInstaller, szAfter]));

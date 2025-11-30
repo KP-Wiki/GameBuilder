@@ -302,31 +302,28 @@ begin
   // Delete old installer if we had it for some reason
   DeleteFileIfExists(fBuildResultInstaller);
 
-  var sl := TStringList.Create;
-  sl.Append('; REVISION (write into Registry)');
-  sl.Append(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
-  sl.Append('');
-  sl.Append('; Folder from where files get taken');
-  sl.Append(Format('#define SourceFolder '#39'..\%s'#39, [fBuildFolder]));
-  sl.Append('');
-  sl.Append('; How the installer executable will be named');
-  sl.Append(Format('#define OutputInstallerName '#39'%s'#39, [ChangeFileExt(fBuildResultInstaller, '')]));
-  sl.Append('');
-  sl.Append('; Application name used in many places');
-  sl.Append(Format('#define MyAppName '#39'%s'#39, [appName]));
-  sl.Append('');
-  sl.Append(Format('#define MyAppExeName '#39'%s'#39, ['KnightsProvince.exe']));
-  sl.Append(Format('#define Website '#39'%s'#39, ['http://www.knightsprovince.com/']));
-
-  sl.SaveToFile('.\installer\Constants.iss');
-  sl.Free;
+  var swConstants := TStreamWriter.Create('.\installer\Constants.iss');
+  swConstants.WriteLine('; REVISION (write into Registry)');
+  swConstants.WriteLine(Format('#define Revision '#39'r%d'#39, [fBuildRevision]));
+  swConstants.WriteLine('');
+  swConstants.WriteLine('; Folder from where files get taken');
+  swConstants.WriteLine(Format('#define SourceFolder '#39'..\%s'#39, [fBuildFolder]));
+  swConstants.WriteLine('');
+  swConstants.WriteLine('; How the installer executable will be named');
+  swConstants.WriteLine(Format('#define OutputInstallerName '#39'%s'#39, [ChangeFileExt(fBuildResultInstaller, '')]));
+  swConstants.WriteLine('');
+  swConstants.WriteLine('; Application name used in many places');
+  swConstants.WriteLine(Format('#define MyAppName '#39'%s'#39, [appName]));
+  swConstants.WriteLine('');
+  swConstants.WriteLine(Format('#define MyAppExeName '#39'%s'#39, ['KnightsProvince.exe']));
+  swConstants.WriteLine(Format('#define Website '#39'%s'#39, ['http://www.knightsprovince.com/']));
+  swConstants.Free;
 
   if CheckTerminated then Exit;
 
   CheckFileExists('InnoSetup', fInnoSetupPath);
   var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
-  var res := CaptureConsoleOutput('.\', cmdInstaller);
-  fOnLog(res);
+  CaptureConsoleOutput2('.\', cmdInstaller, procedure (const aMsg: string) begin fOnLog(aMsg); end);
 
   var szAfter := TFile.GetSize(fBuildResultInstaller);
   fOnLog(Format('Size of "%s" - %d bytes', [fBuildResultInstaller, szAfter]));
