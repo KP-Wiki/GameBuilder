@@ -15,6 +15,7 @@ type
     fPreviousVersionPath: string;
     fMapsRepoPath: string;
     fPrivateRepoPath: string;
+
     fDelphiRSVarsPath: string;
     fFPCUPdeluxePath: string;
     fMadExceptPath: string;
@@ -66,7 +67,7 @@ begin
   fMapsRepoPath := '..\kam_remake_maps.rey\';
   fPrivateRepoPath := '..\kam_remake_private.rey\';
 
-  // Thirdparty apps
+  // External apps
   fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
   fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
@@ -132,7 +133,7 @@ end;
 procedure TKMBuilderKMR.Step00_CheckRepositories;
 begin
   fOnLog('Update submodules ..');
-  var cmdSubmoduleUpdate := 'git submodule update --init --recursive --remote --progress';
+  var cmdSubmoduleUpdate := 'git submodule update --init --merge --recursive --remote --progress';
   var resSubmoduleUpdate := CaptureConsoleOutput('.\', cmdSubmoduleUpdate);
   fOnLog(resSubmoduleUpdate);
   fOnLog('Update submodules done' + sLineBreak);

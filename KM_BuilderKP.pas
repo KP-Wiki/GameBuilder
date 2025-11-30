@@ -97,7 +97,7 @@ begin
   sb.AppendLine(Format('Game name:      %s', [fGameName]));
   sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
 
-  // Thirdparty apps
+  // External apps
   sb.AppendLine('');
   sb.AppendLine(Format('Delphi rsvars:  %s', [fDelphiRSVarsPath]));
   sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFPCUPdeluxePath]));
@@ -120,7 +120,7 @@ end;
 procedure TKMBuilderKP.Step00_CheckRepositories;
 begin
   fOnLog('Update submodules ..');
-  var cmdSubmoduleUpdate := 'git submodule update --init --recursive --remote --progress';
+  var cmdSubmoduleUpdate := 'git submodule update --init --merge --recursive --remote --progress';
   var resSubmoduleUpdate := CaptureConsoleOutput('.\', cmdSubmoduleUpdate);
   fOnLog(resSubmoduleUpdate);
   fOnLog('Update submodules done' + sLineBreak);
