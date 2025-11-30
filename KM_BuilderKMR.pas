@@ -386,7 +386,6 @@ begin
   CopyFile('.\Modding graphics\Readme.txt', fBuildFolder + 'Modding graphics\Readme.txt');
 
   CopyFolder(fMapsRepoPath + 'Campaigns\', fBuildFolder + 'Campaigns\');
-  //todo: /exclude:excluded_test_maps.txt
   CopyFolder(fMapsRepoPath + 'Maps\', fBuildFolder + 'Maps\');
   CopyFolder(fMapsRepoPath + 'MapsMP\', fBuildFolder + 'MapsMP\');
   CopyFolder(fMapsRepoPath + 'Tutorials\', fBuildFolder + 'Tutorials\');
