@@ -31,7 +31,7 @@ type
     procedure HandleBuilderLog(aText: string);
     procedure HandleBuilderStepBegin(aStep: Integer);
     procedure HandleBuilderStepDone(aStep: Integer; aTimeMsec: Integer);
-    procedure HandleBuilderDone;
+    procedure HandleBuilderTaskDone;
     procedure HandleBuildMouseEnter(Sender: TObject);
     procedure HandleBuildMouseLeave(Sender: TObject);
   end;
@@ -51,8 +51,8 @@ uses
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   //todo: Decide on the run mode
-  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
-  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
 
   meInfo.Text := fBuilder.GetInfo;
 
@@ -125,7 +125,7 @@ begin
     procedure
     begin
       meLog.Lines.Append(Format('>>>--- Done "%s"', [fBuilder.GetStepName(aStep)]));
-      fStepPanel[aStep].Caption := Format('%dms', [aTimeMsec]);
+      fStepPanel[aStep].Caption := Format('%.1fsec', [aTimeMsec / 1000]);
       fStepPanel[aStep].Color := $80FF80;
 
       meInfo.Text := fBuilder.GetInfo;
@@ -140,7 +140,7 @@ begin
 end;
 
 
-procedure TForm1.HandleBuilderDone;
+procedure TForm1.HandleBuilderTaskDone;
 begin
   TThread.Synchronize(nil,
     procedure
@@ -187,8 +187,8 @@ end;
 procedure TForm1.btnBuildClick(Sender: TObject);
 begin
   fBuilder.Free;
-  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
-  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
 
   meInfo.Text := fBuilder.GetInfo;
 
@@ -205,8 +205,8 @@ end;
 procedure TForm1.btnStepClick(Sender: TObject);
 begin
   if not Assigned(fBuilder) then
-    //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
-    fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderDone);
+    //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+    fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
 
   meInfo.Text := fBuilder.GetInfo;
 

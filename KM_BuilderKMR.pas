@@ -15,7 +15,6 @@ type
     fPreviousVersionPath: string;
     fMapsRepoPath: string;
     fPrivateRepoPath: string;
-    fResourcesRepoPath: string;
     fDelphiRSVarsPath: string;
     fFPCUPdeluxePath: string;
     fMadExceptPath: string;
@@ -66,7 +65,6 @@ begin
   fPreviousVersionPath := 'C:\KaM Remake Beta r15472\';
   fMapsRepoPath := '..\kam_remake_maps.rey\';
   fPrivateRepoPath := '..\kam_remake_private.rey\';
-  fResourcesRepoPath := '..\kam_remake.rey.resources\';
 
   // Thirdparty apps
   fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
@@ -111,7 +109,6 @@ begin
   sb.AppendLine(Format('Maps repo:      %s', [fMapsRepoPath]));
   sb.AppendLine(Format('TPR:            %s', [fTPRPath]));
   sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
-  sb.AppendLine(Format('Resources repo: %s', [fResourcesRepoPath]));
 
   // Thirdparty apps
   sb.AppendLine('');
@@ -140,11 +137,15 @@ begin
   fOnLog(resSubmoduleUpdate);
   fOnLog('Update submodules done' + sLineBreak);
 
+  if CheckTerminated then Exit;
+
   fOnLog('Checkout master ..');
   var cmdMasterCheckuot := 'git checkout master';
   var resMasterCheckout := CaptureConsoleOutput('.\', cmdMasterCheckuot);
   fOnLog(resMasterCheckout);
   fOnLog('Checkout master done' + sLineBreak);
+
+  if CheckTerminated then Exit;
 
   fOnLog('Pull master ..');
   var cmdMasterPull := 'git pull';
@@ -152,17 +153,15 @@ begin
   fOnLog(resMasterPull);
   fOnLog('Pull master done' + sLineBreak);
 
+  if CheckTerminated then Exit;
+
   fOnLog('Pull private ..');
   var cmdPrivatePull := 'git pull';
   var resPrivatePull := CaptureConsoleOutput(fPrivateRepoPath, cmdPrivatePull);
   fOnLog(resPrivatePull);
   fOnLog('Pull private done' + sLineBreak);
 
-  fOnLog('Pull resources ..');
-  var cmdResourcesPull := 'git pull';
-  var resResourcesPull := CaptureConsoleOutput(fResourcesRepoPath, cmdResourcesPull);
-  fOnLog(resResourcesPull);
-  fOnLog('Pull resources done' + sLineBreak);
+  if CheckTerminated then Exit;
 
   fOnLog('Pull maps ..');
   var cmdMapsPull := 'git pull';
@@ -250,10 +249,6 @@ end;
 
 procedure TKMBuilderKMR.Step05_CopyPrePack;
 begin
-  // Copy RX
-  CheckFolderExists('SpriteResource', fPrivateRepoPath + 'SpriteResource\');
-  CopyFilesRecursive(fPrivateRepoPath + 'SpriteResource\', fResourcesRepoPath + 'SpriteResource\', '*.rx', False);
-
   // Copy palettes and fonts
   CheckFolderExists('Data GFX', fPrivateRepoPath + 'data\gfx\');
   CopyFolder(fPrivateRepoPath + 'data\gfx\', '.\data\gfx\');
@@ -261,13 +256,14 @@ begin
   // It is important that KMR build process requires original TPR
   fOnLog('Copy data files from original KaM TPR game');
 
-  //todo: Verify files CRC or hash
-  //todo: Why Steam TPR houses.dat is different?
-
+  // We need to check CRCs because KaM is inconsistent:
+  //  - Steam version has 18 for Scout range, where's older TPR has it at 9 and some versions at 12
   CheckFileExists('TPR houses.dat', fTPRPath + 'data\defines\houses.dat');
+  CheckFileCRC(fTPRPath + 'data\defines\houses.dat', $2D7A7842);
   CopyFile(fTPRPath + 'data\defines\houses.dat', '.\data\defines\houses.dat');
 
   CheckFileExists('TPR unit.dat', fTPRPath + 'data\defines\unit.dat');
+  CheckFileCRC(fTPRPath + 'data\defines\unit.dat', $9129140C);
   CopyFile(fTPRPath + 'data\defines\unit.dat', '.\data\defines\unit.dat');
 end;
 
@@ -282,12 +278,15 @@ begin
 
   if CheckTerminated then Exit;
 
+  CheckFolderExists('SpriteResource', fPrivateRepoPath + 'SpriteResource\');
+  CheckFolderExists('SpriteResource', fPrivateRepoPath + 'SpriteInterp\Output\');
+
   fOnLog('RXX Pack ..');
   // Pack rx textures to rxx
   var cmdRxxPack := Format('cmd.exe /C ".\Utils\RXXPacker\RXXPacker.exe srx "%s" sint "%s" d ".\%s" rxa all"', [
-    fResourcesRepoPath + 'SpriteResource\',       // Source RX
-    fResourcesRepoPath + 'SpriteInterp\Output\',  // Source interpolated
-    '.\data\sprites\'                             // Destination
+    fPrivateRepoPath + 'SpriteResource\',       // Source RX
+    fPrivateRepoPath + 'SpriteInterp\Output\',  // Source interpolated
+    '.\data\sprites\'                           // Destination
     ]);
 
   CaptureConsoleOutput2('.\', cmdRxxPack, procedure (const aMsg: string) begin fOnLog(aMsg); end);

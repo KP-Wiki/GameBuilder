@@ -51,6 +51,7 @@ type
     procedure CopyFolder(const aPathFrom, aPathTo: string);
 
     procedure CheckFileExists(const aAppName, aFilename: string);
+    procedure CheckFileCRC(const aFilename: string; aExpectedCRC: Cardinal);
     procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
 
@@ -122,6 +123,20 @@ begin
   // Check that file is available at given path
   if not FileExists(aFilename) then
     raise Exception.Create(Format('%s not found at "%s"', [aAppName, aFilename]));
+end;
+
+
+procedure TKMBuilder.CheckFileCRC(const aFilename: string; aExpectedCRC: Cardinal);
+var
+  stream: TMemoryStream;
+  actualCRC: Cardinal;
+begin
+  stream := TMemoryStream.Create;
+  stream.LoadFromFile(aFilename);
+  actualCRC := Adler32CRC(stream);
+  if actualCRC <> aExpectedCRC then
+    raise Exception.Create(Format('CRC does not match for "%s". Expected %8x, actual %8x', [aFilename, aExpectedCRC, actualCRC]));
+  stream.Free;
 end;
 
 

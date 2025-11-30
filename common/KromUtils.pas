@@ -1,9 +1,16 @@
 unit KromUtils;
 interface
+uses
+  System.Classes;
+
 
 type
   TKMOnOutput = reference to procedure (const aMsg: string);
 
+
+function Adler32CRC(aPointer: Pointer; aLength: Cardinal): Cardinal; overload;
+function Adler32CRC(const aText: string): Cardinal; overload;
+function Adler32CRC(S: TMemoryStream): Cardinal; overload;
 
 function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
 procedure TerminateProcessSimple(aProcessHandle: NativeUInt);
@@ -14,6 +21,40 @@ procedure CaptureConsoleOutput2(const aFolder, aString: string; aOnOutput: TKMOn
 implementation
 uses
   System.Math, System.SysUtils, Winapi.Windows;
+
+
+function Adler32CRC(aPointer: Pointer; aLength: Cardinal): Cardinal;
+const
+  MAX_PRIME_16BIT = 65521; // 65521 is the largest prime number smaller than 2^16
+var
+  I, A, B: Cardinal;
+begin
+  A := 1;
+  B := 0; // A is initialized to 1, B to 0
+
+  if aLength <> 0 then // Check to avoid CardinalOverflow on -1
+  for I := 0 to aLength - 1 do
+  begin
+    Inc(A, pByte(NativeUInt(aPointer) + I)^);
+    // We need to MOD B within cos it may overflow in files larger than 65kb, A overflows with files larger than 16mb
+    B := (B + A) mod MAX_PRIME_16BIT;
+  end;
+
+  A := A mod MAX_PRIME_16BIT;
+  Result := B + A shl 16; // Reverse order for smaller numbers
+end;
+
+
+function Adler32CRC(const aText: string): Cardinal;
+begin
+  Result := Adler32CRC(PChar(aText), Length(aText) * SizeOf(Char));
+end;
+
+
+function Adler32CRC(S: TMemoryStream): Cardinal;
+begin
+  Result := Adler32CRC(S.Memory, S.Size);
+end;
 
 
 function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
