@@ -21,6 +21,7 @@ type
     procedure btnStepClick(Sender: TObject);
     procedure btnBuildClick(Sender: TObject);
   private
+    fGame: TKMBuilderGame;
     fBuilder: TKMBuilder;
     fConfigButton: array {Configuration} of TButton;
     fStepButton: array {Step} of TButton;
@@ -50,9 +51,18 @@ uses
 { TForm1 }
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  //todo: Decide on the run mode
-  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  if FileExists('KaM_Remake.dpr') then
+    fGame := bgKMR
+  else
+  if FileExists('KnightsProvince.dpr') then
+    fGame := bgKP;
+
+  case fGame of
+    bgKMR:      fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+    bgKP:       fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  else
+    raise Exception.Create('Unnown game');
+  end;
 
   meInfo.Text := fBuilder.GetInfo;
 
@@ -186,9 +196,14 @@ end;
 
 procedure TForm1.btnBuildClick(Sender: TObject);
 begin
+  // Recreate to be sure there are no lingering values from previous operations
   fBuilder.Free;
-  //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-  fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  case fGame of
+    bgKMR:      fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+    bgKP:       fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  else
+    raise Exception.Create('Unnown game');
+  end;
 
   meInfo.Text := fBuilder.GetInfo;
 
@@ -204,10 +219,6 @@ end;
 
 procedure TForm1.btnStepClick(Sender: TObject);
 begin
-  if not Assigned(fBuilder) then
-    //fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-    fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-
   meInfo.Text := fBuilder.GetInfo;
 
   ControlsEnable(False);

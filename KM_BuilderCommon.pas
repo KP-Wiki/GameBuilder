@@ -6,8 +6,9 @@ uses
 
 type
   TKMBuilderGame = (
-    bgKMR,
-    bgKP
+    bgUnknown,  // Default uninitialzed value
+    bgKMR,      // KaM Remake
+    bgKP        // Knights Province
   );
 
   TKMEvent = procedure of object;
