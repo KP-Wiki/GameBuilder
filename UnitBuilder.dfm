@@ -79,7 +79,7 @@ object Form1: TForm1
     Left = 16
     Top = 144
     Width = 289
-    Height = 481
+    Height = 457
     BevelOuter = bvNone
     Caption = '<Builder steps. Filled in dynamically>'
     Color = clMaroon
@@ -112,5 +112,18 @@ object Form1: TForm1
     ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 4
+  end
+  object btnBuildAllProjects: TButton
+    Left = 16
+    Top = 608
+    Width = 289
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
+    Caption = 'Build all projects'
+    TabOrder = 5
+    OnClick = btnBuildAllProjectsClick
   end
 end

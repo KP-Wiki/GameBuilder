@@ -16,10 +16,12 @@ type
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
-    Label4: TLabel;   procedure FormCreate(Sender: TObject);
+    Label4: TLabel;
+    btnBuildAllProjects: TButton;   procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
     procedure btnBuildClick(Sender: TObject);
+    procedure btnBuildAllProjectsClick(Sender: TObject);
   private
     fGame: TKMBuilderGame;
     fBuilder: TKMBuilder;
@@ -191,6 +193,14 @@ procedure TForm1.HandleBuildMouseLeave(Sender: TObject);
 begin
   // Highlight nothing
   UpdateCheckboxes(-1);
+end;
+
+
+procedure TForm1.btnBuildAllProjectsClick(Sender: TObject);
+begin
+  meLog.Lines.Append('>>>--- Building all projects ..');
+  fBuilder.ExecuteWholeProjectGroup;
+  meLog.Lines.Append('>>>--- Building all projects done');
 end;
 
 
