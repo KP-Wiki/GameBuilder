@@ -212,7 +212,7 @@ begin
     bgKMR:      fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
     bgKP:       fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
   else
-    raise Exception.Create('Unnown game');
+    raise Exception.Create('Unknown game');
   end;
 
   meInfo.Text := fBuilder.GetInfo;
