@@ -41,6 +41,8 @@ type
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
+    procedure ExecuteWholeProjectGroup; override;
+
     function GetInfo: string; override;
   end;
 
@@ -93,6 +95,12 @@ begin
 
   fBuildConfigs.Add(TKMBuildConfig.Create('Build folder (no commit)', [0,1,2,3,4,5,6,7,8,9      ]));
   fBuildConfigs.Add(TKMBuildConfig.Create('Installer',                [0,1,2,3,4,5,6,7,8,9,10,11]));
+end;
+
+
+procedure TKMBuilderKMR.ExecuteWholeProjectGroup;
+begin
+  BuildWinGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj');
 end;
 
 

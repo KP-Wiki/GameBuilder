@@ -39,6 +39,8 @@ type
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
+    procedure ExecuteWholeProjectGroup; override;
+
     function GetInfo: string; override;
   end;
 
@@ -86,6 +88,12 @@ begin
 
   fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',           [0,1,2,3,4,5,6,7,  9,10,11]));
   fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)',  [0,1,2,3,4,5,6,7,8,9,10,11]));
+end;
+
+
+procedure TKMBuilderKP.ExecuteWholeProjectGroup;
+begin
+  BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj');
 end;
 
 

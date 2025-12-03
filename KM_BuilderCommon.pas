@@ -57,13 +57,16 @@ type
     function CheckTerminated: Boolean;
 
     procedure BuildWin(const aRSVars, aProject, aExe: string);
+    procedure BuildWinGroup(const aRSVars, aGroup: string);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
     procedure ExecuteConfig(aConfig: Integer);
     procedure ExecuteStep(aStep: Integer);
+    procedure ExecuteWholeProjectGroup; virtual; abstract;
     procedure Stop;
 
+    // Utility getters
     function GetInfo: string; virtual; abstract;
     function GetConfigCount: Integer;
     function GetConfigName(aConfig: Integer): string;
@@ -286,6 +289,19 @@ begin
   end;
 
   CheckFileExists('Resulting exe', aExe);
+end;
+
+
+procedure TKMBuilder.BuildWinGroup(const aRSVars, aGroup: string);
+begin
+  CheckFileExists('RSVars', aRSVars);
+
+  fOnLog('Building group ' + aGroup);
+  begin
+    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aGroup]);
+    var s2 := CaptureConsoleOutput('.\', s);
+    fOnLog(s2);
+  end;
 end;
 
 
