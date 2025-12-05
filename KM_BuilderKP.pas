@@ -255,7 +255,7 @@ end;
 
 procedure TKMBuilderKP.Step06_GameTests;
 begin
-  //todo: IT seems to make more sense to run the tests ASAP (fail fast)
+  //todo: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
   BuildWin(fDelphiRSVarsPath, 'utils\TestGame\TestGame.dproj', 'TestGame.exe');
 
   var cmdTest := '.\TestGame.exe -test';
