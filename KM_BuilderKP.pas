@@ -29,12 +29,13 @@ type
     procedure Step03_BuildGameExe;
     procedure Step04_PatchGameExe;
     procedure Step05_PackData;
-    procedure Step06_ArrangeFolder;
-    procedure Step07_Pack7zip;
-    procedure Step08_PackInstaller;
-    procedure Step09_CreatePatch;
-    procedure Step10_RegisterOnKT;
-    procedure Step11_CommitAndTag;
+    procedure Step06_GameTests;
+    procedure Step07_ArrangeFolder;
+    procedure Step08_Pack7zip;
+    procedure Step09_PackInstaller;
+    procedure Step10_CreatePatch;
+    procedure Step11_RegisterOnKT;
+    procedure Step12_CommitAndTag;
     //todo: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
@@ -79,15 +80,16 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step03_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step04_PatchGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step05_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step06_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step07_Pack7zip));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step08_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step09_CreatePatch));
-  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step10_RegisterOnKT));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step11_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Game tests',            Step06_GameTests));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step07_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step08_Pack7zip));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step09_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step10_CreatePatch));
+  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step11_RegisterOnKT));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step12_CommitAndTag));
 
-  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',           [0,1,2,3,4,5,6,7,  9,10,11]));
-  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)',  [0,1,2,3,4,5,6,7,8,9,10,11]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',           [0,1,2,3,4,5,6,7,8,  10,11,12]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)',  [0,1,2,3,4,5,6,7,8,9,10,11,12]));
 end;
 
 
@@ -251,7 +253,21 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step06_ArrangeFolder;
+procedure TKMBuilderKP.Step06_GameTests;
+begin
+  //todo: IT seems to make more sense to run the tests ASAP (fail fast)
+  BuildWin(fDelphiRSVarsPath, 'utils\TestGame\TestGame.dproj', 'TestGame.exe');
+
+  var cmdTest := '.\TestGame.exe -test';
+  var res := CaptureConsoleOutput('.\', cmdTest);
+  fOnLog(res);
+
+  if Pos('GAME TESTS PASSED', res) = 0 then
+    raise Exception.Create('Game tests did not succeed');
+end;
+
+
+procedure TKMBuilderKP.Step07_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -294,7 +310,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step07_Pack7zip;
+procedure TKMBuilderKP.Step08_Pack7zip;
 begin
   CheckFileExists('7-zip', f7zipPath);
 
@@ -315,7 +331,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step08_PackInstaller;
+procedure TKMBuilderKP.Step09_PackInstaller;
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
 
@@ -353,7 +369,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step09_CreatePatch;
+procedure TKMBuilderKP.Step10_CreatePatch;
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -366,7 +382,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step10_RegisterOnKT;
+procedure TKMBuilderKP.Step11_RegisterOnKT;
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
@@ -377,7 +393,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step11_CommitAndTag;
+procedure TKMBuilderKP.Step12_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
