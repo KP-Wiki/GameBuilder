@@ -29,7 +29,7 @@ type
     procedure Step03_BuildGameExe;
     procedure Step04_PatchGameExe;
     procedure Step05_PackData;
-    procedure Step06_GameTests;
+    procedure Step06_Tests;
     procedure Step07_ArrangeFolder;
     procedure Step08_Pack7zip;
     procedure Step09_PackInstaller;
@@ -80,7 +80,7 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step03_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step04_PatchGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step05_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Game tests',            Step06_GameTests));
+  fBuildSteps.Add(TKMBuildStep.New('Tests',                 Step06_Tests));
   fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step07_ArrangeFolder));
   fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step08_Pack7zip));
   fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step09_PackInstaller));
@@ -253,7 +253,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step06_GameTests;
+procedure TKMBuilderKP.Step06_Tests;
 begin
   //todo: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
   BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', 'TestingUnitTests.exe');
