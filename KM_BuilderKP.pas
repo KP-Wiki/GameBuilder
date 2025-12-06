@@ -256,10 +256,10 @@ end;
 procedure TKMBuilderKP.Step06_GameTests;
 begin
   //todo: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-  BuildWin(fDelphiRSVarsPath, 'utils\TestGame\TestGame.dproj', 'TestGame.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', 'TestingGameTests.exe');
 
-  var cmdTest := '.\TestGame.exe -test';
-  var res := CaptureConsoleOutput('.\', cmdTest);
+  var cmdTests := '.\TestingGameTests.exe -test';
+  var res := CaptureConsoleOutput('.\', cmdTests);
   fOnLog(res);
 
   if Pos('GAME TESTS PASSED', res) = 0 then
