@@ -322,8 +322,7 @@ begin
 
   if CheckTerminated then Exit;
 
-  //todo: Fails to build in "Release" configuration
-  //BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'Utils\ScriptValidator\ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
@@ -394,6 +393,7 @@ begin
 
   CopyFile('.\Modding graphics\Readme.txt', fBuildFolder + 'Modding graphics\Readme.txt');
 
+  // Copy maps directly to build folder, as we may have altered test maps locally that we dont want to loose
   CopyFolder(fMapsRepoPath + 'Campaigns\', fBuildFolder + 'Campaigns\');
   CopyFolder(fMapsRepoPath + 'Maps\', fBuildFolder + 'Maps\');
   CopyFolder(fMapsRepoPath + 'MapsMP\', fBuildFolder + 'MapsMP\');
@@ -427,10 +427,7 @@ begin
   CopyFile('.\Utils\Campaign builder\CampaignBuilder.exe', fBuildFolder + 'Utils\CampaignBuilder.exe');
   CopyFile('.\Utils\DedicatedServer\KaM_DedicatedServer.exe', fBuildFolder + 'Utils\KaM_Remake_Server_win32.exe');
   CopyFile('.\Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe', fBuildFolder + 'Utils\KaM_Remake_ServerGUI_win32.exe');
-
-  //todo: Fails to build in "Release" configuration
-  //CopyFile('.\Utils\ScriptValidator\ScriptValidator.exe', fBuildFolder + 'Utils\ScriptValidator.exe');
-
+  CopyFile('.\Utils\ScriptValidator\ScriptValidator.exe', fBuildFolder + 'Utils\ScriptValidator.exe');
   CopyFile('.\Utils\TranslationManager (from kp-wiki)\TranslationManager.exe', fBuildFolder + 'Utils\TranslationManager.exe');
 
   // copy linux dedicated servers
