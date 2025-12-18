@@ -25,7 +25,7 @@ type
     procedure Step00_CheckRepositories;
     procedure Step01_Initialize;
     procedure Step02_DeleteTempFiles;
-    //todo: Update scripting code and wiki
+    //todo -cBuilder: Update scripting code and wiki
     procedure Step03_BuildGameExe;
     procedure Step04_PatchGameExe;
     procedure Step05_PackData;
@@ -36,7 +36,7 @@ type
     procedure Step10_CreatePatch;
     procedure Step11_RegisterOnKT;
     procedure Step12_CommitAndTag;
-    //todo: git Push wiki
+    //todo -cBuilder: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
@@ -255,7 +255,7 @@ end;
 
 procedure TKMBuilderKP.Step06_Tests;
 begin
-  //todo: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
+  //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
   BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', 'TestingUnitTests.exe');
 
   var cmdUnitTests := '.\TestingUnitTests.exe -test';
@@ -265,7 +265,7 @@ begin
   if Pos('UNIT TESTS PASSED', resUnitTests) = 0 then
     raise Exception.Create('Unit tests did not succeed');
 
-  //todo: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
+  //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
   BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', 'TestingGameTests.exe');
 
   var cmdGameTests := '.\TestingGameTests.exe -test';

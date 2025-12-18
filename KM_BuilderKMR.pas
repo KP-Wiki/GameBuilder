@@ -247,7 +247,7 @@ begin
   fOnLog('Generating docs ..');
   for var I := Low(LANG) to High(LANG) do
   begin
-    //todo: Folder structure should be simplified
+    //todo -cBuilder: Folder structure should be simplified
     var cmd := Format('%s -s -f markdown .\Docs\Readme\getting-started_%s.md -o .\Docs\Readme\Readme_%s.html --metadata-file=".\Docs\Readme\Readme\metadata_%s.yml"', [fPandocPath, LANG[I], LANG[I], LANG[I]]);
     var res := CaptureConsoleOutput('.\', cmd);
     fOnLog(res);
@@ -330,7 +330,7 @@ begin
 
   if CheckTerminated then Exit;
 
-  //todo: Add ScriptingEditor as submodule
+  //todo -cBuilder: Add ScriptingEditor as submodule
   //BuildWin(fDelphiRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe');
 
   if CheckTerminated then Exit;
@@ -403,7 +403,7 @@ begin
   CopyFolder(fPrivateRepoPath + 'Video\Campaigns\', fBuildFolder + 'Campaigns\');
   CopyFolder(fPrivateRepoPath + 'Video\data\', fBuildFolder + 'data\');
 
-  //todo: Stop relying on previous build
+  //todo -cBuilder: Stop relying on previous build
   CopyFolder(fPreviousVersionPath + 'data\sfx\', fBuildFolder + 'data\sfx\');
   CopyFolder(fPreviousVersionPath + 'Music\', fBuildFolder + 'Music\');
   CopyFilesRecursive(fPreviousVersionPath + 'Campaigns\', fBuildFolder + 'Campaigns\', '*.mp3', True);
@@ -418,7 +418,7 @@ begin
   CopyFile('.\Installer\uninst_clean.bat', fBuildFolder + 'uninst_clean.bat');
   CopyFile('.\Installer\oalinst.exe', fBuildFolder + 'oalinst.exe');
 
-  //todo: Copy Scripting Editor
+  //todo -cBuilder: Copy Scripting Editor
   //Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe
 
   // copy utility applications exe files
