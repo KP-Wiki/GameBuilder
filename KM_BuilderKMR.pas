@@ -10,6 +10,7 @@ type
   private
     fGameName: string;
     fGameVersion: string;
+    fGameFlags: string;
 
     fTPRPath: string;
     fPreviousVersionPath: string;
@@ -28,16 +29,20 @@ type
 
     procedure Step00_CheckRepositories;
     procedure Step01_Initialize;
-    procedure Step02_CopyNetAuthSecure;
-    procedure Step03_DeleteTempFiles;
-    procedure Step04_GenerateDocs;
-    procedure Step05_CopyPrePack;
-    procedure Step06_RxxPack;
-    procedure Step07_BuildGameExe;
-    procedure Step08_PatchGameExe;
-    procedure Step09_ArrangeFolder;
-    procedure Step10_PackInstaller;
-    procedure Step11_CommitAndTag;
+    procedure Step02_ScanForDebugFlags;
+    procedure Step03_CopyNetAuthSecure;
+    //todo -cBuilder: check for IFDEFs (DBG_DBG_RNG_SPY and such)
+    //todo -cBuilder: check for DBG_ consts in KM_Defaults
+    procedure Step04_DeleteTempFiles;
+    procedure Step05_GenerateDocs;
+    procedure Step06_CopyPrePack;
+    procedure Step07_RxxPack;
+    procedure Step08_BuildGameExe;
+    procedure Step09_PatchGameExe;
+    procedure Step10_ArrangeFolder;
+    procedure Step11_PackInstaller;
+    procedure Step12_CommitAndTag;
+    //todo -cBuilder: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 
@@ -49,9 +54,9 @@ type
 
 implementation
 uses
-  System.Classes,
-  System.IOUtils, System.DateUtils,
-  KromUtils;
+  System.Classes, System.IOUtils, System.DateUtils, System.StrUtils,
+  KromUtils,
+  KM_BuilderUtility;
 
 
 { TKMBuilderKMR }
@@ -82,19 +87,24 @@ begin
 
   fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
-  fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step02_CopyNetAuthSecure));
-  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step03_DeleteTempFiles));
-  fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step04_GenerateDocs));
-  fBuildSteps.Add(TKMBuildStep.New('Copy pre-pack',         Step05_CopyPrePack));
-  fBuildSteps.Add(TKMBuildStep.New('RXX pack',              Step06_RxxPack));
-  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step07_BuildGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step08_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step09_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step10_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step11_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step02_ScanForDebugFlags));
+  fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step03_CopyNetAuthSecure));
+  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step04_DeleteTempFiles));
+  fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step05_GenerateDocs));
+  fBuildSteps.Add(TKMBuildStep.New('Copy pre-pack',         Step06_CopyPrePack));
+  fBuildSteps.Add(TKMBuildStep.New('RXX pack',              Step07_RxxPack));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step08_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step09_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step10_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step11_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step12_CommitAndTag));
 
-  fBuildConfigs.Add(TKMBuildConfig.Create('Build folder (no commit)', [0,1,2,3,4,5,6,7,8,9      ]));
-  fBuildConfigs.Add(TKMBuildConfig.Create('Installer',                [0,1,2,3,4,5,6,7,8,9,10,11]));
+  // Configurations
+  // Beta build with lots of debug features enabled
+  fBuildConfigs.Add(TKMBuildConfig.Create('Debug (installer, no commit)', [0,1,2,3,4,5,6,7,8,9,10,11   ]));
+
+  // Public release version, without any extra slowdowns like DBG_DBG_RNG_SPY or alike
+  fBuildConfigs.Add(TKMBuildConfig.Create('Release (installer)',          [0,1,2,3,4,5,6,7,8,9,10,11,12]));
 end;
 
 
@@ -111,6 +121,7 @@ begin
   // Constants
   sb.AppendLine(Format('Game name:      %s', [fGameName]));
   sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
+  sb.AppendLine(Format('Game flags:     %s', [fGameFlags]));
 
   // Component paths
   sb.AppendLine('');
@@ -196,14 +207,50 @@ begin
   if CheckTerminated then Exit;
 
   // Write revision number for game exe
-  TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM=' + IntToStr(fBuildRevision));
+  TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM = ' + IntToStr(fBuildRevision));
 
   fBuildFolder := Format('%s %s r%d\', [fGameName, fGameVersion, fBuildRevision]);
   fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + '.exe';
 end;
 
 
-procedure TKMBuilderKMR.Step02_CopyNetAuthSecure;
+procedure TKMBuilderKMR.Step02_ScanForDebugFlags;
+begin
+  // DEFINEs:
+  // - DEBUG
+  // - DBG_SKIP_SECURE_AUTH
+  // - DBG_PERFLOG
+  // - DBG_DBG_RNG_SPY
+  // KM_Defaults:
+  // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
+
+  fGameFlags := '';
+
+  // Scan game code for debug flags (ignore Utils for now)
+  var pasFilesScanned: Integer;
+  ScanForDebugFlagsInPas('.\src\',
+    procedure (aFlag: TKMDebugScan)
+    begin
+      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+    end,
+    pasFilesScanned);
+  fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
+
+  // Scan game code for debug flags (ignore Utils for now)
+  var incFilesScanned: Integer;
+  ScanForDebugFlagsInInc('.\',
+    procedure (aFlag: TKMDebugScan)
+    begin
+      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+    end,
+    incFilesScanned);
+  fOnLog(Format('Scanned %d inc files', [incFilesScanned]));
+end;
+
+
+procedure TKMBuilderKMR.Step03_CopyNetAuthSecure;
 begin
   var nsaSource := fPrivateRepoPath + 'src\net\KM_NetAuthSecure.pas';
   var nsaDest := '.\src\net\KM_NetAuthSecure.pas';
@@ -216,7 +263,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step03_DeleteTempFiles;
+procedure TKMBuilderKMR.Step04_DeleteTempFiles;
 begin
   // Delete folders
   fOnLog('Deleting temp folders ..');
@@ -238,7 +285,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step04_GenerateDocs;
+procedure TKMBuilderKMR.Step05_GenerateDocs;
 const
   LANG: array [0..3] of string = ('eng', 'ger', 'pol', 'rus');
 begin
@@ -256,7 +303,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step05_CopyPrePack;
+procedure TKMBuilderKMR.Step06_CopyPrePack;
 begin
   // Copy palettes and fonts
   CheckFolderExists('Data GFX', fPrivateRepoPath + 'data\gfx\');
@@ -277,9 +324,10 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step06_RxxPack;
+procedure TKMBuilderKMR.Step07_RxxPack;
 begin
-  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', '.\Utils\RXXPacker\RXXPacker.exe');
+  // The tool is thought to be quite reliable, hence we opt for "Release" build, so that it works faster
+  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', 'Release', '.\Utils\RXXPacker\RXXPacker.exe');
 
   if CheckTerminated then Exit;
 
@@ -304,29 +352,31 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step07_BuildGameExe;
+procedure TKMBuilderKMR.Step08_BuildGameExe;
 begin
-  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', 'KaM_Remake.exe');
+  var config := 'Release';
+
+  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', config, 'KaM_Remake.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', 'Utils\Campaign builder\CampaignBuilder.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', config, 'Utils\Campaign builder\CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', config, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', config, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', 'Utils\ScriptValidator\ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', config, 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', config, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
@@ -343,7 +393,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step08_PatchGameExe;
+procedure TKMBuilderKMR.Step09_PatchGameExe;
 begin
   var exeSizeBefore := TFile.GetSize('KaM_Remake.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -368,7 +418,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step09_ArrangeFolder;
+procedure TKMBuilderKMR.Step10_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -436,7 +486,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step10_PackInstaller;
+procedure TKMBuilderKMR.Step11_PackInstaller;
 begin
   CheckFileExists('Installer secret', fPrivateRepoPath + 'Installer\CheckKaM.iss');
 
@@ -469,7 +519,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step11_CommitAndTag;
+procedure TKMBuilderKMR.Step12_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);

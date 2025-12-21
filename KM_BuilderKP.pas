@@ -25,6 +25,8 @@ type
     procedure Step00_CheckRepositories;
     procedure Step01_Initialize;
     procedure Step02_DeleteTempFiles;
+    //todo -cBuilder: check for IFDEFs (DBG_DBG_RNG_SPY and such)
+    //todo -cBuilder: check for DBG_ consts in KM_Defaults
     //todo -cBuilder: Update scripting code and wiki
     procedure Step03_BuildGameExe;
     procedure Step04_PatchGameExe;
@@ -180,19 +182,21 @@ end;
 
 procedure TKMBuilderKP.Step03_BuildGameExe;
 begin
-  BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', 'KnightsProvince.exe');
+  var config := 'Release';
+
+  BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', config, 'KnightsProvince.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', 'ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', config, 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', config, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', config, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
@@ -256,7 +260,7 @@ end;
 procedure TKMBuilderKP.Step06_Tests;
 begin
   //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-  BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', 'TestingUnitTests.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', 'Debug', 'TestingUnitTests.exe');
 
   var cmdUnitTests := '.\TestingUnitTests.exe -test';
   var resUnitTests := CaptureConsoleOutput('.\', cmdUnitTests);
@@ -266,7 +270,7 @@ begin
     raise Exception.Create('Unit tests did not succeed');
 
   //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-  BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', 'TestingGameTests.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', 'Debug', 'TestingGameTests.exe');
 
   var cmdGameTests := '.\TestingGameTests.exe -test';
   var resGameTests := CaptureConsoleOutput('.\', cmdGameTests);

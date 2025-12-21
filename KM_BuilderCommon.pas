@@ -56,7 +56,7 @@ type
     procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
 
-    procedure BuildWin(const aRSVars, aProject, aExe: string);
+    procedure BuildWin(const aRSVars, aProject, aConfig, aExe: string);
     procedure BuildWinGroup(const aRSVars, aGroup: string);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
@@ -276,14 +276,16 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWin(const aRSVars, aProject, aExe: string);
+procedure TKMBuilder.BuildWin(const aRSVars, aProject, aConfig, aExe: string);
 begin
   DeleteFileIfExists(aExe);
   CheckFileExists('RSVars', aRSVars);
 
+  Assert((aConfig = 'Debug') or (aConfig = 'Release'));
+
   fOnLog('Building ' + aExe);
   begin
-    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aProject]);
+    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=%s /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aProject, aConfig]);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
