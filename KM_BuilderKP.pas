@@ -121,6 +121,7 @@ begin
       end;
     end);
 
+  fWorker.FreeOnTerminate := False;
   fWorker.Start;
 end;
 
@@ -215,7 +216,7 @@ begin
 
   // Scan game code for debug flags (ignore Utils for now)
   var incFilesScanned: Integer;
-  ScanForDebugFlagsInInc('.\',
+  ScanForDebugFlagsInInc('.\src\',
     procedure (aFlag: TKMDebugScan)
     begin
       fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));

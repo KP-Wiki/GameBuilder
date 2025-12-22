@@ -415,6 +415,7 @@ begin
       end;
     end);
 
+  fWorker.FreeOnTerminate := False;
   fWorker.Start;
 end;
 
@@ -447,6 +448,7 @@ begin
       end;
     end);
 
+  fWorker.FreeOnTerminate := False;
   fWorker.Start;
 end;
 
