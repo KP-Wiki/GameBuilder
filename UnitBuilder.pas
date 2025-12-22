@@ -3,7 +3,7 @@ interface
 uses
   System.Classes,
   Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.ExtCtrls,
-  KM_BuilderCommon, KM_BuilderKMR, KM_BuilderKP;
+  KM_BuilderManager;
 
 
 type
@@ -20,11 +20,11 @@ type
     btnBuildAllProjects: TButton;   procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
-    procedure btnBuildClick(Sender: TObject);
+    procedure btnConfigClick(Sender: TObject);
     procedure btnBuildAllProjectsClick(Sender: TObject);
   private
     fGame: TKMBuilderGame;
-    fBuilder: TKMBuilder;
+    fBuilderManager: TKMBuilderManager;
     fConfigButton: array {Configuration} of TButton;
     fStepButton: array {Step} of TButton;
     fStepPanel: array {Step} of TPanel;
@@ -59,14 +59,9 @@ begin
   if FileExists('KnightsProvince.dpr') then
     fGame := bgKP;
 
-  case fGame of
-    bgKMR:      fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-    bgKP:       fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-  else
-    raise Exception.Create('Unknown game');
-  end;
+  fBuilderManager := TKMBuilderManager.Create(fGame, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
 
-  meInfo.Text := fBuilder.GetInfo;
+  meInfo.Text := fBuilderManager.GetInfo;
 
   CreateButtons;
 end;
@@ -75,32 +70,32 @@ end;
 procedure TForm1.CreateButtons;
 begin
   pnlBuildConfig.Caption := '';
-  SetLength(fConfigButton, fBuilder.GetConfigCount);
-  for var I := 0 to fBuilder.GetConfigCount - 1 do
+  SetLength(fConfigButton, fBuilderManager.GetConfigCount);
+  for var I := 0 to fBuilderManager.GetConfigCount - 1 do
   begin
     fConfigButton[I] := TButton.Create(pnlBuildConfig);
     fConfigButton[I].Parent := pnlBuildConfig;
     fConfigButton[I].Top := 28 * Ord(I);
     fConfigButton[I].Width := pnlBuildConfig.Width;
     fConfigButton[I].Height := 25;
-    fConfigButton[I].Caption := fBuilder.GetConfigName(I);
+    fConfigButton[I].Caption := fBuilderManager.GetConfigName(I);
     fConfigButton[I].Tag := Ord(I);
     fConfigButton[I].OnMouseEnter := HandleBuildMouseEnter;
     fConfigButton[I].OnMouseLeave := HandleBuildMouseLeave;
-    fConfigButton[I].OnClick := btnBuildClick;
+    fConfigButton[I].OnClick := btnConfigClick;
   end;
 
   pnlBuildStep.Caption := '';
-  SetLength(fStepButton, fBuilder.GetStepCount);
-  SetLength(fStepPanel, fBuilder.GetStepCount);
-  for var I := 0 to fBuilder.GetStepCount - 1 do
+  SetLength(fStepButton, fBuilderManager.GetStepCount);
+  SetLength(fStepPanel, fBuilderManager.GetStepCount);
+  for var I := 0 to fBuilderManager.GetStepCount - 1 do
   begin
     fStepButton[I] := TButton.Create(pnlBuildStep);
     fStepButton[I].Parent := pnlBuildStep;
     fStepButton[I].Top := 28 * Ord(I);
     fStepButton[I].Width := pnlBuildStep.Width - 80;
     fStepButton[I].Height := 25;
-    fStepButton[I].Caption := fBuilder.GetStepName(I);
+    fStepButton[I].Caption := fBuilderManager.GetStepName(I);
     fStepButton[I].Tag := Ord(I);
     fStepButton[I].OnClick := btnStepClick;
 
@@ -125,7 +120,9 @@ begin
   TThread.Synchronize(nil,
     procedure
     begin
-      meLog.Lines.Append(Format('>>>--- Step "%s"', [fBuilder.GetStepName(aStep)]));
+      meInfo.Text := fBuilderManager.GetInfo;
+
+      meLog.Lines.Append(Format('>>>--- Step "%s"', [fBuilderManager.GetStepName(aStep)]));
       fStepPanel[aStep].Color := $80FFFF;
     end);
 end;
@@ -136,19 +133,19 @@ begin
   TThread.Synchronize(nil,
     procedure
     begin
-      meLog.Lines.Append(Format('>>>--- Done "%s"', [fBuilder.GetStepName(aStep)]));
+      meInfo.Text := fBuilderManager.GetInfo;
+
+      meLog.Lines.Append(Format('>>>--- Done "%s"', [fBuilderManager.GetStepName(aStep)]));
       fStepPanel[aStep].Caption := Format('%.1fsec', [aTimeMsec / 1000]);
       fStepPanel[aStep].Color := $80FF80;
-
-      meInfo.Text := fBuilder.GetInfo;
     end);
 end;
 
 
 procedure TForm1.UpdateCheckboxes(aConfig: Integer);
 begin
-  for var I := 0 to fBuilder.GetStepCount - 1 do
-    fStepButton[I].Visible := (aConfig = -1) or fBuilder.GetConfigContainsStep(aConfig, I);
+  for var I := 0 to fBuilderManager.GetStepCount - 1 do
+    fStepButton[I].Visible := (aConfig = -1) or fBuilderManager.GetConfigContainsStep(aConfig, I);
 end;
 
 
@@ -199,47 +196,38 @@ end;
 procedure TForm1.btnBuildAllProjectsClick(Sender: TObject);
 begin
   meLog.Lines.Append('>>>--- Building all projects ..');
-  fBuilder.ExecuteWholeProjectGroup;
+  fBuilderManager.ExecuteWholeProjectGroup;
   meLog.Lines.Append('>>>--- Building all projects done');
 end;
 
 
-procedure TForm1.btnBuildClick(Sender: TObject);
+procedure TForm1.btnConfigClick(Sender: TObject);
 begin
-  // Recreate to be sure there are no lingering values from previous operations
-  fBuilder.Free;
-  case fGame of
-    bgKMR:      fBuilder := TKMBuilderKMR.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-    bgKP:       fBuilder := TKMBuilderKP.Create(HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
-  else
-    raise Exception.Create('Unknown game');
-  end;
-
-  meInfo.Text := fBuilder.GetInfo;
+  meInfo.Text := fBuilderManager.GetInfo;
 
   ControlsEnable(False);
 
-  var buildConfig := TButton(Sender).Tag;
-  for var I := 0 to fBuilder.GetStepCount - 1 do
+  for var I := 0 to fBuilderManager.GetStepCount - 1 do
     fStepPanel[I].Color := $808080;
 
-  fBuilder.ExecuteConfig(buildConfig);
+  var buildConfig := TButton(Sender).Tag;
+  fBuilderManager.ExecuteConfig(buildConfig);
 end;
 
 
 procedure TForm1.btnStepClick(Sender: TObject);
 begin
-  meInfo.Text := fBuilder.GetInfo;
+  meInfo.Text := fBuilderManager.GetInfo;
 
   ControlsEnable(False);
   var step := TButton(Sender).Tag;
-  fBuilder.ExecuteStep(step);
+  fBuilderManager.ExecuteStep(step);
 end;
 
 
 procedure TForm1.btnStopClick(Sender: TObject);
 begin
-  fBuilder.Stop;
+  fBuilderManager.Stop;
 end;
 
 

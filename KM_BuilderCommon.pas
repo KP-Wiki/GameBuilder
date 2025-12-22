@@ -5,18 +5,18 @@ uses
 
 
 type
-  TKMBuilderGame = (
-    bgUnknown,  // Default uninitialzed value
-    bgKMR,      // KaM Remake
-    bgKP        // Knights Province
+  TKMBuildConfiguration = (
+    bcUndefined, // Default uninitialized value
+    bcDebug,
+    bcRelease
   );
-
-  TKMBuildConfiguration = (bcUndefined, bcDebug, bcRelease);
 
 const
   BUILD_CONFIG_NAME: array [TKMBuildConfiguration] of string = ('Undefined', 'Debug', 'Release');
 
 type
+  TKMBuilderClass = class of TKMBuilder;
+
   TKMEvent = procedure of object;
   TKMEventStepBegin = reference to procedure (aStep: Integer);
   TKMEventStepDone = reference to procedure (aStep: Integer; aTimeMsec: Integer);
@@ -31,12 +31,13 @@ type
   TKMBuildConfig = class
   private
     fCaption: string;
-    fConfig: TKMBuildConfiguration;
+    fBuildConfig: TKMBuildConfiguration;
     fSteps: TList<Integer>; // Reference steps
   public
-    constructor Create(const aCaption: string; aConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
+    constructor Create(const aCaption: string; aBuildConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
     function Contains(aStep: Integer): Boolean;
     property Caption: string read fCaption;
+    property BuildConfig: TKMBuildConfiguration read fBuildConfig;
   end;
 
   TKMBuilder = class
@@ -67,16 +68,18 @@ type
     procedure BuildWinGroup(const aRSVars, aGroup: string);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
-    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+    constructor Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
+    destructor Destroy; override;
+
     procedure ExecuteConfig(aConfig: Integer);
     procedure ExecuteStep(aStep: Integer);
     procedure ExecuteWholeProjectGroup; virtual; abstract;
-    procedure Stop;
 
     // Utility getters
     function GetInfo: string; virtual; abstract;
     function GetConfigCount: Integer;
     function GetConfigName(aConfig: Integer): string;
+    function GetConfigBuildConfig(aConfig: Integer): TKMBuildConfiguration;
     function GetConfigContainsStep(aConfig, aStep: Integer): Boolean;
     function GetStepCount: Integer;
     function GetStepName(aStep: Integer): string;
@@ -98,12 +101,12 @@ end;
 
 
 { TKMBuildConfig }
-constructor TKMBuildConfig.Create(const aCaption: string; aConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
+constructor TKMBuildConfig.Create(const aCaption: string; aBuildConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
 begin
   inherited Create;
 
   fCaption := aCaption;
-  fConfig := aConfig;
+  fBuildConfig := aBuildConfig;
   fSteps := TList<Integer>.Create;
   fSteps.AddRange(aSteps);
 end;
@@ -116,7 +119,7 @@ end;
 
 
 { TKMBuilder }
-constructor TKMBuilder.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilder.Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited Create;
 
@@ -165,7 +168,7 @@ begin
   Result := TThread.CheckTerminated;
 
   if Result then
-    fOnLog('Terminated');
+    fOnLog(Format('Terminated %d', [TThread.CurrentThread.ThreadID]));
 end;
 
 
@@ -284,6 +287,13 @@ begin
 end;
 
 
+destructor TKMBuilder.Destroy;
+begin
+  FreeAndNil(fWorker);
+  inherited;
+end;
+
+
 procedure TKMBuilder.BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; const aExe: string);
 begin
   DeleteFileIfExists(aExe);
@@ -344,6 +354,15 @@ begin
 end;
 
 
+function TKMBuilder.GetConfigBuildConfig(aConfig: Integer): TKMBuildConfiguration;
+begin
+  if aConfig <> -1 then
+    Result := fBuildConfigs[aConfig].BuildConfig
+  else
+    Result := bcUndefined;
+end;
+
+
 function TKMBuilder.GetConfigContainsStep(aConfig, aStep: Integer): Boolean;
 begin
   Result := fBuildConfigs[aConfig].Contains(aStep);
@@ -373,6 +392,8 @@ begin
     procedure
     begin
       try
+        fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
+
         for var I := 0 to fBuildSteps.Count - 1 do
         if GetConfigContainsStep(thisConfig, I) then
         begin
@@ -409,6 +430,8 @@ begin
     procedure
     begin
       try
+        fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
+
         fOnStepBegin(thisStep);
 
         var tickBegin := GetTickCount;
@@ -425,17 +448,6 @@ begin
     end);
 
   fWorker.Start;
-end;
-
-
-procedure TKMBuilder.Stop;
-begin
-  if fWorker = nil then Exit;
-
-  fWorker.Terminate;
-  fWorker := nil;
-
-  // Worker will terminate when it can
 end;
 
 

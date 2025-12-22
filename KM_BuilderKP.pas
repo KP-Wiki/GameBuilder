@@ -10,7 +10,7 @@ type
   private
     fGameName: string;
     fGameVersion: string;
-    fGameBuildConfig: TKMBuildConfiguration;
+    fGameBuildConfig: Integer;
     fGameFlags: string;
 
     fDelphiRSVarsPath: string;
@@ -41,7 +41,7 @@ type
     procedure Step13_CommitAndTag;
     //todo -cBuilder: git Push wiki
   public
-    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+    constructor Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
 
     procedure ExecuteWholeProjectGroup; override;
 
@@ -57,14 +57,14 @@ uses
 
 
 { TKMBuilderKP }
-constructor TKMBuilderKP.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilderKP.Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
 
   // Builder constants
   fGameName := 'Knights Province';
   fGameVersion := 'Alpha 13 wip';
-  fGameBuildConfig := bcRelease; //todo: Rig properly
+  fGameBuildConfig := aConfig;
 
   // Thirdparty apps
   fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
@@ -106,7 +106,22 @@ end;
 
 procedure TKMBuilderKP.ExecuteWholeProjectGroup;
 begin
-  BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj');
+  fWorker := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      try
+        fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
+
+        BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj');
+
+        fOnDone;
+      except
+        on E: Exception do
+          fOnLog('ERROR: ' + E.Message);
+      end;
+    end);
+
+  fWorker.Start;
 end;
 
 
@@ -117,7 +132,7 @@ begin
   // Constants
   sb.AppendLine(Format('Game name:          %s', [fGameName]));
   sb.AppendLine(Format('Game version:       %s', [fGameVersion]));
-  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[fGameBuildConfig]]));
+  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[GetConfigBuildConfig(fGameBuildConfig)]]));
   sb.AppendLine(Format('Game flags:         %s', [fGameFlags]));
 
   // External apps
@@ -304,9 +319,9 @@ begin
 end;
 
 
+//todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
 procedure TKMBuilderKP.Step07_Tests;
 begin
-  //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
   BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, 'TestingUnitTests.exe');
 
   var cmdUnitTests := '.\TestingUnitTests.exe -test';
@@ -316,7 +331,6 @@ begin
   if Pos('UNIT TESTS PASSED', resUnitTests) = 0 then
     raise Exception.Create('Unit tests did not succeed');
 
-  //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
   BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', bcRelease, 'TestingGameTests.exe');
 
   var cmdGameTests := '.\TestingGameTests.exe -test';

@@ -10,7 +10,7 @@ type
   private
     fGameName: string;
     fGameVersion: string;
-    fGameBuildConfig: TKMBuildConfiguration;
+    fGameBuildConfig: Integer;
     fGameFlags: string;
 
     fTPRPath: string;
@@ -32,8 +32,6 @@ type
     procedure Step01_Initialize;
     procedure Step02_ScanForDebugFlags;
     procedure Step03_CopyNetAuthSecure;
-    //todo -cBuilder: check for IFDEFs (DBG_DBG_RNG_SPY and such)
-    //todo -cBuilder: check for DBG_ consts in KM_Defaults
     procedure Step04_DeleteTempFiles;
     procedure Step05_GenerateDocs;
     procedure Step06_CopyPrePack;
@@ -45,7 +43,7 @@ type
     procedure Step12_CommitAndTag;
     //todo -cBuilder: git Push wiki
   public
-    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+    constructor Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
 
     procedure ExecuteWholeProjectGroup; override;
 
@@ -61,14 +59,14 @@ uses
 
 
 { TKMBuilderKMR }
-constructor TKMBuilderKMR.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilderKMR.Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
 
   // Builder constants
   fGameName := 'KaM Remake';
   fGameVersion := 'Beta';
-  fGameBuildConfig := bcRelease; //todo: Rig properly
+  fGameBuildConfig := aConfig;
 
   // Component paths (will be moved into INI or XML settings)
   fTPRPath := '..\KaM TPR\';
@@ -114,7 +112,22 @@ end;
 
 procedure TKMBuilderKMR.ExecuteWholeProjectGroup;
 begin
-  BuildWinGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj');
+  fWorker := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      try
+        fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
+
+        BuildWinGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj');
+
+        fOnDone;
+      except
+        on E: Exception do
+          fOnLog('ERROR: ' + E.Message);
+      end;
+    end);
+
+  fWorker.Start;
 end;
 
 
@@ -125,7 +138,7 @@ begin
   // Constants
   sb.AppendLine(Format('Game name:          %s', [fGameName]));
   sb.AppendLine(Format('Game version:       %s', [fGameVersion]));
-  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[fGameBuildConfig]]));
+  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[GetConfigBuildConfig(fGameBuildConfig)]]));
   sb.AppendLine(Format('Game flags:         %s', [fGameFlags]));
 
   // Component paths
@@ -199,6 +212,13 @@ end;
 procedure TKMBuilderKMR.Step01_Initialize;
 begin
   CheckFileExists('Main project file', 'KaM_Remake.dproj');
+
+//  for var I := 0 to 499 do
+//  begin
+//    Sleep(500);
+//    fOnLog(IntToStr(I));
+//    if CheckTerminated then Exit;
+//  end;
 
   fOnLog('rev-list ..');
   // Get revision number from git
