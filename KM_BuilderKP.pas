@@ -10,6 +10,8 @@ type
   private
     fGameName: string;
     fGameVersion: string;
+    fGameBuildConfig: TKMBuildConfiguration;
+    fGameFlags: string;
 
     fDelphiRSVarsPath: string;
     fFPCUPdeluxePath: string;
@@ -24,20 +26,19 @@ type
 
     procedure Step00_CheckRepositories;
     procedure Step01_Initialize;
-    procedure Step02_DeleteTempFiles;
-    //todo -cBuilder: check for IFDEFs (DBG_DBG_RNG_SPY and such)
-    //todo -cBuilder: check for DBG_ consts in KM_Defaults
+    procedure Step02_ScanForDebugFlags;
+    procedure Step03_DeleteTempFiles;
     //todo -cBuilder: Update scripting code and wiki
-    procedure Step03_BuildGameExe;
-    procedure Step04_PatchGameExe;
-    procedure Step05_PackData;
-    procedure Step06_Tests;
-    procedure Step07_ArrangeFolder;
-    procedure Step08_Pack7zip;
-    procedure Step09_PackInstaller;
-    procedure Step10_CreatePatch;
-    procedure Step11_RegisterOnKT;
-    procedure Step12_CommitAndTag;
+    procedure Step04_BuildGameExe;
+    procedure Step05_PatchGameExe;
+    procedure Step06_PackData;
+    procedure Step07_Tests;
+    procedure Step08_ArrangeFolder;
+    procedure Step09_Pack7zip;
+    procedure Step10_PackInstaller;
+    procedure Step11_CreatePatch;
+    procedure Step12_RegisterOnKT;
+    procedure Step13_CommitAndTag;
     //todo -cBuilder: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
@@ -50,9 +51,9 @@ type
 
 implementation
 uses
-  System.Classes,
-  System.IOUtils, System.DateUtils,
-  KromUtils;
+  System.Classes, System.IOUtils, System.DateUtils, System.StrUtils,
+  KromUtils,
+  KM_BuilderUtility;
 
 
 { TKMBuilderKP }
@@ -63,6 +64,7 @@ begin
   // Builder constants
   fGameName := 'Knights Province';
   fGameVersion := 'Alpha 13 wip';
+  fGameBuildConfig := bcRelease; //todo: Rig properly
 
   // Thirdparty apps
   fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
@@ -71,27 +73,34 @@ begin
   f7zipPath := 'C:\Program Files\7-Zip\7z.exe';
   fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
 
+  // Build information
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
   fBuildResult7zip := '<no filename>';
   fBuildResultInstaller := '<no filename>';
 
+  // Steps (order is important)
   fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
-  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step02_DeleteTempFiles));
-  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step03_BuildGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step04_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step05_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Tests',                 Step06_Tests));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step07_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step08_Pack7zip));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step09_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step10_CreatePatch));
-  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step11_RegisterOnKT));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step12_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step02_ScanForDebugFlags));
+  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step03_DeleteTempFiles));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step04_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step05_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step06_PackData));
+  fBuildSteps.Add(TKMBuildStep.New('Tests',                 Step07_Tests));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step08_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step09_Pack7zip));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step10_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step11_CreatePatch));
+  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step12_RegisterOnKT));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step13_CommitAndTag));
 
-  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',           [0,1,2,3,4,5,6,7,8,  10,11,12]));
-  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)',  [0,1,2,3,4,5,6,7,8,9,10,11,12]));
+  // Configurations
+  // Nightly build (same as Release, without Installer)
+  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,   11,12,13]));
+
+  // Public release version
+  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13]));
 end;
 
 
@@ -106,8 +115,10 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:      %s', [fGameName]));
-  sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
+  sb.AppendLine(Format('Game name:          %s', [fGameName]));
+  sb.AppendLine(Format('Game version:       %s', [fGameVersion]));
+  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[fGameBuildConfig]]));
+  sb.AppendLine(Format('Game flags:         %s', [fGameFlags]));
 
   // External apps
   sb.AppendLine('');
@@ -164,7 +175,43 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step02_DeleteTempFiles;
+procedure TKMBuilderKP.Step02_ScanForDebugFlags;
+begin
+  // DEFINEs:
+  // - DEBUG
+  // - DBG_SKIP_SECURE_AUTH
+  // - DBG_PERFLOG
+  // - DBG_DBG_RNG_SPY
+  // KM_Defaults:
+  // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
+
+  fGameFlags := '';
+
+  // Scan game code for debug flags (ignore Utils for now)
+  var pasFilesScanned: Integer;
+  ScanForDebugFlagsInPas('.\src\',
+    procedure (aFlag: TKMDebugScan)
+    begin
+      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+    end,
+    pasFilesScanned);
+  fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
+
+  // Scan game code for debug flags (ignore Utils for now)
+  var incFilesScanned: Integer;
+  ScanForDebugFlagsInInc('.\',
+    procedure (aFlag: TKMDebugScan)
+    begin
+      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+    end,
+    incFilesScanned);
+  fOnLog(Format('Scanned %d inc files', [incFilesScanned]));
+end;
+
+
+procedure TKMBuilderKP.Step03_DeleteTempFiles;
 begin
   // Delete folders
   fOnLog('Deleting temp folders ..');
@@ -180,9 +227,9 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step03_BuildGameExe;
+procedure TKMBuilderKP.Step04_BuildGameExe;
 begin
-  var config := 'Release';
+  var config := bcRelease;
 
   BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', config, 'KnightsProvince.exe');
 
@@ -208,7 +255,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step04_PatchGameExe;
+procedure TKMBuilderKP.Step05_PatchGameExe;
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -233,7 +280,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step05_PackData;
+procedure TKMBuilderKP.Step06_PackData;
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -257,10 +304,10 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step06_Tests;
+procedure TKMBuilderKP.Step07_Tests;
 begin
   //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-  BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', 'Debug', 'TestingUnitTests.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, 'TestingUnitTests.exe');
 
   var cmdUnitTests := '.\TestingUnitTests.exe -test';
   var resUnitTests := CaptureConsoleOutput('.\', cmdUnitTests);
@@ -270,7 +317,7 @@ begin
     raise Exception.Create('Unit tests did not succeed');
 
   //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-  BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', 'Debug', 'TestingGameTests.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', bcRelease, 'TestingGameTests.exe');
 
   var cmdGameTests := '.\TestingGameTests.exe -test';
   var resGameTests := CaptureConsoleOutput('.\', cmdGameTests);
@@ -281,7 +328,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step07_ArrangeFolder;
+procedure TKMBuilderKP.Step08_ArrangeFolder;
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -324,7 +371,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step08_Pack7zip;
+procedure TKMBuilderKP.Step09_Pack7zip;
 begin
   CheckFileExists('7-zip', f7zipPath);
 
@@ -345,7 +392,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step09_PackInstaller;
+procedure TKMBuilderKP.Step10_PackInstaller;
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
 
@@ -383,7 +430,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step10_CreatePatch;
+procedure TKMBuilderKP.Step11_CreatePatch;
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -396,7 +443,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step11_RegisterOnKT;
+procedure TKMBuilderKP.Step12_RegisterOnKT;
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
@@ -407,7 +454,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step12_CommitAndTag;
+procedure TKMBuilderKP.Step13_CommitAndTag;
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);

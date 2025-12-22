@@ -10,6 +10,7 @@ type
   private
     fGameName: string;
     fGameVersion: string;
+    fGameBuildConfig: TKMBuildConfiguration;
     fGameFlags: string;
 
     fTPRPath: string;
@@ -67,6 +68,7 @@ begin
   // Builder constants
   fGameName := 'KaM Remake';
   fGameVersion := 'Beta';
+  fGameBuildConfig := bcRelease; //todo: Rig properly
 
   // Component paths (will be moved into INI or XML settings)
   fTPRPath := '..\KaM TPR\';
@@ -81,10 +83,12 @@ begin
   fPandocPath := 'C:\pandoc-3.8.2.1\pandoc.exe';
   fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
 
+  // Build information
   fBuildRevision := -1;
   fBuildFolder := '<no folder>';
   fBuildResultInstaller := '<no filename>';
 
+  // Steps (order is important)
   fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step02_ScanForDebugFlags));
@@ -101,10 +105,10 @@ begin
 
   // Configurations
   // Beta build with lots of debug features enabled
-  fBuildConfigs.Add(TKMBuildConfig.Create('Debug (installer, no commit)', [0,1,2,3,4,5,6,7,8,9,10,11   ]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Debug (installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11   ]));
 
   // Public release version, without any extra slowdowns like DBG_DBG_RNG_SPY or alike
-  fBuildConfigs.Add(TKMBuildConfig.Create('Release (installer)',          [0,1,2,3,4,5,6,7,8,9,10,11,12]));
+  fBuildConfigs.Add(TKMBuildConfig.Create('Release (installer)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
 end;
 
 
@@ -119,9 +123,10 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:      %s', [fGameName]));
-  sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
-  sb.AppendLine(Format('Game flags:     %s', [fGameFlags]));
+  sb.AppendLine(Format('Game name:          %s', [fGameName]));
+  sb.AppendLine(Format('Game version:       %s', [fGameVersion]));
+  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[fGameBuildConfig]]));
+  sb.AppendLine(Format('Game flags:         %s', [fGameFlags]));
 
   // Component paths
   sb.AppendLine('');
@@ -327,7 +332,7 @@ end;
 procedure TKMBuilderKMR.Step07_RxxPack;
 begin
   // The tool is thought to be quite reliable, hence we opt for "Release" build, so that it works faster
-  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', 'Release', '.\Utils\RXXPacker\RXXPacker.exe');
+  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, '.\Utils\RXXPacker\RXXPacker.exe');
 
   if CheckTerminated then Exit;
 
@@ -354,7 +359,7 @@ end;
 
 procedure TKMBuilderKMR.Step08_BuildGameExe;
 begin
-  var config := 'Release';
+  var config := bcRelease;
 
   BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', config, 'KaM_Remake.exe');
 

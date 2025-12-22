@@ -11,6 +11,12 @@ type
     bgKP        // Knights Province
   );
 
+  TKMBuildConfiguration = (bcUndefined, bcDebug, bcRelease);
+
+const
+  BUILD_CONFIG_NAME: array [TKMBuildConfiguration] of string = ('Undefined', 'Debug', 'Release');
+
+type
   TKMEvent = procedure of object;
   TKMEventStepBegin = reference to procedure (aStep: Integer);
   TKMEventStepDone = reference to procedure (aStep: Integer; aTimeMsec: Integer);
@@ -25,9 +31,10 @@ type
   TKMBuildConfig = class
   private
     fCaption: string;
+    fConfig: TKMBuildConfiguration;
     fSteps: TList<Integer>; // Reference steps
   public
-    constructor Create(const aCaption: string; aSteps: TArray<Integer>);
+    constructor Create(const aCaption: string; aConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
     function Contains(aStep: Integer): Boolean;
     property Caption: string read fCaption;
   end;
@@ -56,7 +63,7 @@ type
     procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
 
-    procedure BuildWin(const aRSVars, aProject, aConfig, aExe: string);
+    procedure BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; const aExe: string);
     procedure BuildWinGroup(const aRSVars, aGroup: string);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
@@ -91,11 +98,12 @@ end;
 
 
 { TKMBuildConfig }
-constructor TKMBuildConfig.Create(const aCaption: string; aSteps: TArray<Integer>);
+constructor TKMBuildConfig.Create(const aCaption: string; aConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
 begin
   inherited Create;
 
   fCaption := aCaption;
+  fConfig := aConfig;
   fSteps := TList<Integer>.Create;
   fSteps.AddRange(aSteps);
 end;
@@ -276,16 +284,16 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWin(const aRSVars, aProject, aConfig, aExe: string);
+procedure TKMBuilder.BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; const aExe: string);
 begin
   DeleteFileIfExists(aExe);
   CheckFileExists('RSVars', aRSVars);
 
-  Assert((aConfig = 'Debug') or (aConfig = 'Release'));
+  Assert(aConfig <> bcUndefined);
 
-  fOnLog('Building ' + aExe);
+  fOnLog(Format('Building %s (%s)', [aExe, BUILD_CONFIG_NAME[aConfig]]));
   begin
-    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=%s /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aProject, aConfig]);
+    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=%s /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aProject, BUILD_CONFIG_NAME[aConfig]]);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
@@ -370,11 +378,11 @@ begin
         begin
           fOnStepBegin(I);
 
-          var t := GetTickCount;
+          var tickBegin := GetTickCount;
 
           fBuildSteps[I].Method;
 
-          fOnStepDone(I, GetTickCount - t);
+          fOnStepDone(I, GetTickCount - tickBegin);
 
           if CheckTerminated then
             Exit;
@@ -403,11 +411,11 @@ begin
       try
         fOnStepBegin(thisStep);
 
-        var t := GetTickCount;
+        var tickBegin := GetTickCount;
 
         fBuildSteps[thisStep].Method;
 
-        fOnStepDone(thisStep, GetTickCount - t);
+        fOnStepDone(thisStep, GetTickCount - tickBegin);
 
         fOnDone;
       except
