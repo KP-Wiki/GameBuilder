@@ -1,7 +1,7 @@
 unit KM_BuilderManager;
 interface
 uses
-  Winapi.Windows, System.Classes, System.SysUtils, System.Generics.Collections,
+  System.Classes, System.SysUtils,
   KM_BuilderCommon;
 
 
@@ -16,7 +16,6 @@ type
   TKMBuilderManager = class
   protected
     fBuilderClass: TKMBuilderClass;
-
     fBuilderSwatch: TKMBuilder; // Builder swatch to keep reference Configurations and Steps
     fBuilderActive: TKMBuilder;       // Actual builder
 
@@ -27,16 +26,16 @@ type
     fWorker: TThread;
   public
     constructor Create(aGame: TKMBuilderGame; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
-    procedure ExecuteConfig(aConfig: Integer);
+    procedure ExecuteScenario(aScenario: Integer);
     procedure ExecuteStep(aStep: Integer);
     procedure ExecuteWholeProjectGroup;
     procedure Stop;
 
     // Utility getters
     function GetInfo: string;
-    function GetConfigCount: Integer;
-    function GetConfigName(aConfig: Integer): string;
-    function GetConfigContainsStep(aConfig, aStep: Integer): Boolean;
+    function GetScenarioCount: Integer;
+    function GetScenarioName(aScenario: Integer): string;
+    function GetScenarioContainsStep(aScenario, aStep: Integer): Boolean;
     function GetStepCount: Integer;
     function GetStepName(aStep: Integer): string;
   end;
@@ -44,8 +43,6 @@ type
 
 implementation
 uses
-  System.IOUtils, System.Masks, System.DateUtils, System.StrUtils,
-  KromUtils,
   KM_BuilderKMR, KM_BuilderKP;
 
 
@@ -79,21 +76,21 @@ begin
 end;
 
 
-function TKMBuilderManager.GetConfigCount: Integer;
+function TKMBuilderManager.GetScenarioCount: Integer;
 begin
-  Result := fBuilderSwatch.GetConfigCount;
+  Result := fBuilderSwatch.GetScenarioCount;
 end;
 
 
-function TKMBuilderManager.GetConfigName(aConfig: Integer): string;
+function TKMBuilderManager.GetScenarioName(aScenario: Integer): string;
 begin
-  Result := fBuilderSwatch.GetConfigName(aConfig);
+  Result := fBuilderSwatch.GetScenarioName(aScenario);
 end;
 
 
-function TKMBuilderManager.GetConfigContainsStep(aConfig, aStep: Integer): Boolean;
+function TKMBuilderManager.GetScenarioContainsStep(aScenario, aStep: Integer): Boolean;
 begin
-  Result := fBuilderSwatch.GetConfigContainsStep(aConfig, aStep);
+  Result := fBuilderSwatch.GetScenarioContainsStep(aScenario, aStep);
 end;
 
 
@@ -109,11 +106,11 @@ begin
 end;
 
 
-procedure TKMBuilderManager.ExecuteConfig(aConfig: Integer);
+procedure TKMBuilderManager.ExecuteScenario(aScenario: Integer);
 begin
   fBuilderActive.Free;
-  fBuilderActive := fBuilderClass.Create(aConfig, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
-  fBuilderActive.ExecuteConfig(aConfig);
+  fBuilderActive := fBuilderClass.Create(aScenario, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  fBuilderActive.ExecuteConfig(aScenario);
 end;
 
 

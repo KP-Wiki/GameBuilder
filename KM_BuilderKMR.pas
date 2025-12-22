@@ -11,7 +11,7 @@ type
     fGameName: string;
     fGameVersion: string;
     fGameBuildConfig: Integer;
-    fGameFlags: string;
+    fGameBuildFlags: string;
 
     fTPRPath: string;
     fPreviousVersionPath: string;
@@ -101,12 +101,12 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step11_PackInstaller));
   fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step12_CommitAndTag));
 
-  // Configurations
+  // Scenarios
   // Beta build with lots of debug features enabled
-  fBuildConfigs.Add(TKMBuildConfig.Create('Debug (installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11   ]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Debug (installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11   ]));
 
   // Public release version, without any extra slowdowns like DBG_DBG_RNG_SPY or alike
-  fBuildConfigs.Add(TKMBuildConfig.Create('Release (installer)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Release (installer)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
 end;
 
 
@@ -136,10 +136,10 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:          %s', [fGameName]));
-  sb.AppendLine(Format('Game version:       %s', [fGameVersion]));
-  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[GetConfigBuildConfig(fGameBuildConfig)]]));
-  sb.AppendLine(Format('Game flags:         %s', [fGameFlags]));
+  sb.AppendLine(Format('Game name:    %s', [fGameName]));
+  sb.AppendLine(Format('Game version: %s', [fGameVersion]));
+  sb.AppendLine(Format('Build config: %s', [BUILD_CONFIG_NAME[GetScenarioBuildConfig(fGameBuildConfig)]]));
+  sb.AppendLine(Format('Build flags:  %s', [fGameBuildFlags]));
 
   // Component paths
   sb.AppendLine('');
@@ -249,7 +249,7 @@ begin
   // KM_Defaults:
   // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
 
-  fGameFlags := '';
+  fGameBuildFlags := '';
 
   // Scan game code for debug flags (ignore Utils for now)
   var pasFilesScanned: Integer;
@@ -257,7 +257,7 @@ begin
     procedure (aFlag: TKMDebugScan)
     begin
       fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
     end,
     pasFilesScanned);
   fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
@@ -268,7 +268,7 @@ begin
     procedure (aFlag: TKMDebugScan)
     begin
       fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
     end,
     incFilesScanned);
   fOnLog(Format('Scanned %d inc files', [incFilesScanned]));

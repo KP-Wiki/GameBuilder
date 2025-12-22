@@ -32,9 +32,9 @@ object Form1: TForm1
   object Label3: TLabel
     Left = 16
     Top = 16
-    Width = 77
+    Width = 53
     Height = 15
-    Caption = 'Configuration:'
+    Caption = 'Scenarios:'
   end
   object Label4: TLabel
     Left = 16
@@ -75,7 +75,7 @@ object Form1: TForm1
     TabOrder = 1
     OnClick = btnStopClick
   end
-  object pnlBuildStep: TPanel
+  object pnlBuildSteps: TPanel
     Left = 16
     Top = 144
     Width = 289
@@ -85,13 +85,13 @@ object Form1: TForm1
     Color = clMaroon
     TabOrder = 2
   end
-  object pnlBuildConfig: TPanel
+  object pnlBuildScenarios: TPanel
     Left = 16
     Top = 32
     Width = 289
     Height = 89
     BevelOuter = bvNone
-    Caption = '<Builder configurations. Filled in dynamically>'
+    Caption = '<Builder scenarios. Filled in dynamically>'
     TabOrder = 3
   end
   object meInfo: TMemo

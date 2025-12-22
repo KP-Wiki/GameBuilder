@@ -11,7 +11,7 @@ type
     fGameName: string;
     fGameVersion: string;
     fGameBuildConfig: Integer;
-    fGameFlags: string;
+    fGameBuildFlags: string;
 
     fDelphiRSVarsPath: string;
     fFPCUPdeluxePath: string;
@@ -95,12 +95,12 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step12_RegisterOnKT));
   fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step13_CommitAndTag));
 
-  // Configurations
+  // Scenarios
   // Nightly build (same as Release, without Installer)
-  fBuildConfigs.Add(TKMBuildConfig.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,   11,12,13]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,   11,12,13]));
 
   // Public release version
-  fBuildConfigs.Add(TKMBuildConfig.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13]));
 end;
 
 
@@ -130,10 +130,10 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:          %s', [fGameName]));
-  sb.AppendLine(Format('Game version:       %s', [fGameVersion]));
-  sb.AppendLine(Format('Game build config:  %s', [BUILD_CONFIG_NAME[GetConfigBuildConfig(fGameBuildConfig)]]));
-  sb.AppendLine(Format('Game flags:         %s', [fGameFlags]));
+  sb.AppendLine(Format('Game name:    %s', [fGameName]));
+  sb.AppendLine(Format('Game version: %s', [fGameVersion]));
+  sb.AppendLine(Format('Build config: %s', [BUILD_CONFIG_NAME[GetScenarioBuildConfig(fGameBuildConfig)]]));
+  sb.AppendLine(Format('Build flags:  %s', [fGameBuildFlags]));
 
   // External apps
   sb.AppendLine('');
@@ -200,7 +200,7 @@ begin
   // KM_Defaults:
   // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
 
-  fGameFlags := '';
+  fGameBuildFlags := '';
 
   // Scan game code for debug flags (ignore Utils for now)
   var pasFilesScanned: Integer;
@@ -208,7 +208,7 @@ begin
     procedure (aFlag: TKMDebugScan)
     begin
       fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
     end,
     pasFilesScanned);
   fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
@@ -219,7 +219,7 @@ begin
     procedure (aFlag: TKMDebugScan)
     begin
       fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameFlags := fGameFlags + IfThen(fGameFlags <> '', ', ') + aFlag.FlagName;
+      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
     end,
     incFilesScanned);
   fOnLog(Format('Scanned %d inc files', [incFilesScanned]));

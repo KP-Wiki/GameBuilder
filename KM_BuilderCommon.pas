@@ -28,7 +28,7 @@ type
     class function New(const aCaption: string; aMethod: TKMEvent): TKMBuildStep; static;
   end;
 
-  TKMBuildConfig = class
+  TKMBuildScenario = class
   private
     fCaption: string;
     fBuildConfig: TKMBuildConfiguration;
@@ -42,7 +42,7 @@ type
 
   TKMBuilder = class
   protected
-    fBuildConfigs: TList<TKMBuildConfig>;
+    fBuildScenarios: TList<TKMBuildScenario>;
 
     // It is important to keep all steps in a single list for simpler debug. Configurations just reference them
     fBuildSteps: TList<TKMBuildStep>;
@@ -68,19 +68,19 @@ type
     procedure BuildWinGroup(const aRSVars, aGroup: string);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
-    constructor Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
+    constructor Create(aScenario: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
     destructor Destroy; override;
 
-    procedure ExecuteConfig(aConfig: Integer);
+    procedure ExecuteConfig(aScenario: Integer);
     procedure ExecuteStep(aStep: Integer);
     procedure ExecuteWholeProjectGroup; virtual; abstract;
 
     // Utility getters
     function GetInfo: string; virtual; abstract;
-    function GetConfigCount: Integer;
-    function GetConfigName(aConfig: Integer): string;
-    function GetConfigBuildConfig(aConfig: Integer): TKMBuildConfiguration;
-    function GetConfigContainsStep(aConfig, aStep: Integer): Boolean;
+    function GetScenarioCount: Integer;
+    function GetScenarioName(aScenario: Integer): string;
+    function GetScenarioBuildConfig(aScenario: Integer): TKMBuildConfiguration;
+    function GetScenarioContainsStep(aScenario, aStep: Integer): Boolean;
     function GetStepCount: Integer;
     function GetStepName(aStep: Integer): string;
   end;
@@ -100,8 +100,8 @@ begin
 end;
 
 
-{ TKMBuildConfig }
-constructor TKMBuildConfig.Create(const aCaption: string; aBuildConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
+{ TKMBuildScenario }
+constructor TKMBuildScenario.Create(const aCaption: string; aBuildConfig: TKMBuildConfiguration; aSteps: TArray<Integer>);
 begin
   inherited Create;
 
@@ -112,14 +112,14 @@ begin
 end;
 
 
-function TKMBuildConfig.Contains(aStep: Integer): Boolean;
+function TKMBuildScenario.Contains(aStep: Integer): Boolean;
 begin
   Result := fSteps.Contains(aStep);
 end;
 
 
 { TKMBuilder }
-constructor TKMBuilder.Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilder.Create(aScenario: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited Create;
 
@@ -128,7 +128,7 @@ begin
   fOnStepDone := aOnStepDone;
   fOnDone := aOnDone;
 
-  fBuildConfigs := TList<TKMBuildConfig>.Create;
+  fBuildScenarios := TList<TKMBuildScenario>.Create;
   fBuildSteps := TList<TKMBuildStep>.Create;
 end;
 
@@ -342,30 +342,30 @@ begin
 end;
 
 
-function TKMBuilder.GetConfigCount: Integer;
+function TKMBuilder.GetScenarioCount: Integer;
 begin
-  Result := fBuildConfigs.Count;
+  Result := fBuildScenarios.Count;
 end;
 
 
-function TKMBuilder.GetConfigName(aConfig: Integer): string;
+function TKMBuilder.GetScenarioName(aScenario: Integer): string;
 begin
-  Result := fBuildConfigs[aConfig].Caption;
+  Result := fBuildScenarios[aScenario].Caption;
 end;
 
 
-function TKMBuilder.GetConfigBuildConfig(aConfig: Integer): TKMBuildConfiguration;
+function TKMBuilder.GetScenarioBuildConfig(aScenario: Integer): TKMBuildConfiguration;
 begin
-  if aConfig <> -1 then
-    Result := fBuildConfigs[aConfig].BuildConfig
+  if aScenario <> -1 then
+    Result := fBuildScenarios[aScenario].BuildConfig
   else
     Result := bcUndefined;
 end;
 
 
-function TKMBuilder.GetConfigContainsStep(aConfig, aStep: Integer): Boolean;
+function TKMBuilder.GetScenarioContainsStep(aScenario, aStep: Integer): Boolean;
 begin
-  Result := fBuildConfigs[aConfig].Contains(aStep);
+  Result := fBuildScenarios[aScenario].Contains(aStep);
 end;
 
 
@@ -381,12 +381,12 @@ begin
 end;
 
 
-procedure TKMBuilder.ExecuteConfig(aConfig: Integer);
+procedure TKMBuilder.ExecuteConfig(aScenario: Integer);
 var
   thisConfig: Integer;
 begin
   // Try to capture into local variable, just in case
-  thisConfig := aConfig;
+  thisConfig := aScenario;
 
   fWorker := TThread.CreateAnonymousThread(
     procedure
@@ -395,7 +395,7 @@ begin
         fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
 
         for var I := 0 to fBuildSteps.Count - 1 do
-        if GetConfigContainsStep(thisConfig, I) then
+        if GetScenarioContainsStep(thisConfig, I) then
         begin
           fOnStepBegin(I);
 

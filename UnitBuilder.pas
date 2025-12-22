@@ -10,8 +10,8 @@ type
   TForm1 = class(TForm)
     meLog: TMemo;
     btnStop: TButton;
-    pnlBuildStep: TPanel;
-    pnlBuildConfig: TPanel;
+    pnlBuildSteps: TPanel;
+    pnlBuildScenarios: TPanel;
     meInfo: TMemo;
     Label1: TLabel;
     Label2: TLabel;
@@ -20,21 +20,21 @@ type
     btnBuildAllProjects: TButton;   procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
-    procedure btnConfigClick(Sender: TObject);
+    procedure btnScenarioClick(Sender: TObject);
     procedure btnBuildAllProjectsClick(Sender: TObject);
   private
     fGame: TKMBuilderGame;
     fBuilderManager: TKMBuilderManager;
-    fConfigButton: array {Configuration} of TButton;
+    fScenarioButton: array {Scenario} of TButton;
     fStepButton: array {Step} of TButton;
     fStepPanel: array {Step} of TPanel;
     procedure CreateButtons;
     procedure ControlsEnable(aFlag: Boolean);
-    procedure UpdateCheckboxes(aConfig: Integer);
+    procedure UpdateStepVisibility(aScenario: Integer);
     procedure HandleBuilderLog(aText: string);
     procedure HandleBuilderStepBegin(aStep: Integer);
     procedure HandleBuilderStepDone(aStep: Integer; aTimeMsec: Integer);
-    procedure HandleBuilderTaskDone;
+    procedure HandleBuilderScenarioDone;
     procedure HandleBuildMouseEnter(Sender: TObject);
     procedure HandleBuildMouseLeave(Sender: TObject);
   end;
@@ -59,7 +59,7 @@ begin
   if FileExists('KnightsProvince.dpr') then
     fGame := bgKP;
 
-  fBuilderManager := TKMBuilderManager.Create(fGame, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderTaskDone);
+  fBuilderManager := TKMBuilderManager.Create(fGame, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderScenarioDone);
 
   meInfo.Text := fBuilderManager.GetInfo;
 
@@ -69,39 +69,39 @@ end;
 
 procedure TForm1.CreateButtons;
 begin
-  pnlBuildConfig.Caption := '';
-  SetLength(fConfigButton, fBuilderManager.GetConfigCount);
-  for var I := 0 to fBuilderManager.GetConfigCount - 1 do
+  pnlBuildScenarios.Caption := '';
+  SetLength(fScenarioButton, fBuilderManager.GetScenarioCount);
+  for var I := 0 to fBuilderManager.GetScenarioCount - 1 do
   begin
-    fConfigButton[I] := TButton.Create(pnlBuildConfig);
-    fConfigButton[I].Parent := pnlBuildConfig;
-    fConfigButton[I].Top := 28 * Ord(I);
-    fConfigButton[I].Width := pnlBuildConfig.Width;
-    fConfigButton[I].Height := 25;
-    fConfigButton[I].Caption := fBuilderManager.GetConfigName(I);
-    fConfigButton[I].Tag := Ord(I);
-    fConfigButton[I].OnMouseEnter := HandleBuildMouseEnter;
-    fConfigButton[I].OnMouseLeave := HandleBuildMouseLeave;
-    fConfigButton[I].OnClick := btnConfigClick;
+    fScenarioButton[I] := TButton.Create(pnlBuildScenarios);
+    fScenarioButton[I].Parent := pnlBuildScenarios;
+    fScenarioButton[I].Top := 28 * Ord(I);
+    fScenarioButton[I].Width := pnlBuildScenarios.Width;
+    fScenarioButton[I].Height := 25;
+    fScenarioButton[I].Caption := fBuilderManager.GetScenarioName(I);
+    fScenarioButton[I].Tag := Ord(I);
+    fScenarioButton[I].OnMouseEnter := HandleBuildMouseEnter;
+    fScenarioButton[I].OnMouseLeave := HandleBuildMouseLeave;
+    fScenarioButton[I].OnClick := btnScenarioClick;
   end;
 
-  pnlBuildStep.Caption := '';
+  pnlBuildSteps.Caption := '';
   SetLength(fStepButton, fBuilderManager.GetStepCount);
   SetLength(fStepPanel, fBuilderManager.GetStepCount);
   for var I := 0 to fBuilderManager.GetStepCount - 1 do
   begin
-    fStepButton[I] := TButton.Create(pnlBuildStep);
-    fStepButton[I].Parent := pnlBuildStep;
+    fStepButton[I] := TButton.Create(pnlBuildSteps);
+    fStepButton[I].Parent := pnlBuildSteps;
     fStepButton[I].Top := 28 * Ord(I);
-    fStepButton[I].Width := pnlBuildStep.Width - 80;
+    fStepButton[I].Width := pnlBuildSteps.Width - 80;
     fStepButton[I].Height := 25;
     fStepButton[I].Caption := fBuilderManager.GetStepName(I);
     fStepButton[I].Tag := Ord(I);
     fStepButton[I].OnClick := btnStepClick;
 
-    fStepPanel[I] := TPanel.Create(pnlBuildStep);
-    fStepPanel[I].Parent := pnlBuildStep;
-    fStepPanel[I].Left := pnlBuildStep.Width - 72;
+    fStepPanel[I] := TPanel.Create(pnlBuildSteps);
+    fStepPanel[I].Parent := pnlBuildSteps;
+    fStepPanel[I].Left := pnlBuildSteps.Width - 72;
     fStepPanel[I].Top := 28 * Ord(I);
     fStepPanel[I].Width := 72;
     fStepPanel[I].Height := 25;
@@ -142,20 +142,20 @@ begin
 end;
 
 
-procedure TForm1.UpdateCheckboxes(aConfig: Integer);
+procedure TForm1.UpdateStepVisibility(aScenario: Integer);
 begin
   for var I := 0 to fBuilderManager.GetStepCount - 1 do
-    fStepButton[I].Visible := (aConfig = -1) or fBuilderManager.GetConfigContainsStep(aConfig, I);
+    fStepButton[I].Visible := (aScenario = -1) or fBuilderManager.GetScenarioContainsStep(aScenario, I);
 end;
 
 
-procedure TForm1.HandleBuilderTaskDone;
+procedure TForm1.HandleBuilderScenarioDone;
 begin
   TThread.Synchronize(nil,
     procedure
     begin
       ControlsEnable(True);
-      meLog.Lines.Append('Task done');
+      meLog.Lines.Append('Scenario done');
     end);
 end;
 
@@ -180,16 +180,14 @@ end;
 
 procedure TForm1.HandleBuildMouseEnter(Sender: TObject);
 begin
-  // Highlight checkboxes steps that will be executed
   var buildConfig := TButton(Sender).Tag;
-  UpdateCheckboxes(buildConfig);
+  UpdateStepVisibility(buildConfig);
 end;
 
 
 procedure TForm1.HandleBuildMouseLeave(Sender: TObject);
 begin
-  // Highlight nothing
-  UpdateCheckboxes(-1);
+  UpdateStepVisibility(-1);
 end;
 
 
@@ -201,7 +199,7 @@ begin
 end;
 
 
-procedure TForm1.btnConfigClick(Sender: TObject);
+procedure TForm1.btnScenarioClick(Sender: TObject);
 begin
   meInfo.Text := fBuilderManager.GetInfo;
 
@@ -210,8 +208,8 @@ begin
   for var I := 0 to fBuilderManager.GetStepCount - 1 do
     fStepPanel[I].Color := $808080;
 
-  var buildConfig := TButton(Sender).Tag;
-  fBuilderManager.ExecuteConfig(buildConfig);
+  var buildScenario := TButton(Sender).Tag;
+  fBuilderManager.ExecuteScenario(buildScenario);
 end;
 
 
