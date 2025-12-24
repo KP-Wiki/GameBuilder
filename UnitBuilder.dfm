@@ -43,6 +43,13 @@ object Form1: TForm1
     Height = 15
     Caption = 'Steps:'
   end
+  object Label5: TLabel
+    Left = 16
+    Top = 592
+    Width = 34
+    Height = 15
+    Caption = 'Utility:'
+  end
   object meLog: TMemo
     Left = 312
     Top = 344
@@ -79,7 +86,7 @@ object Form1: TForm1
     Left = 16
     Top = 144
     Width = 289
-    Height = 457
+    Height = 425
     BevelOuter = bvNone
     Caption = '<Builder steps. Filled in dynamically>'
     Color = clMaroon

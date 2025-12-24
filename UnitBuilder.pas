@@ -17,7 +17,9 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-    btnBuildAllProjects: TButton;   procedure FormCreate(Sender: TObject);
+    btnBuildAllProjects: TButton;
+    Label5: TLabel;
+    procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
     procedure btnScenarioClick(Sender: TObject);
