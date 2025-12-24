@@ -63,7 +63,7 @@ begin
 
   // Builder constants
   fGameName := 'Knights Province';
-  fGameVersion := 'Alpha 13 wip';
+  fGameVersion := 'Alpha 13';
   fGameBuildConfig := aConfig;
 
   // Thirdparty apps
