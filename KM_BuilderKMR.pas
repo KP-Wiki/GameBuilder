@@ -490,7 +490,6 @@ begin
   CopyFile('.\ogg.dll', fBuildFolder + 'ogg.dll');
   CopyFile('.\vorbis.dll', fBuildFolder + 'vorbis.dll');
   CopyFile('.\vorbisfile.dll', fBuildFolder + 'vorbisfile.dll');
-  CopyFile('.\Utils\AVIPlayer\OpenAL32.dll', fBuildFolder + 'OpenAL32.dll');
   CopyFile('.\Installer\uninst_clean.bat', fBuildFolder + 'uninst_clean.bat');
   CopyFile('.\Installer\oalinst.exe', fBuildFolder + 'oalinst.exe');
 
