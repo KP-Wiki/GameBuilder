@@ -116,9 +116,12 @@ end;
 
 procedure TKMBuilderManager.ExecuteStep(aStep: Integer);
 begin
-  fBuilderActive.Free;
-  var buildConfig := 0; //todo: We dont have selector for Config yet
-  fBuilderActive := fBuilderClass.Create(buildConfig, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  if fBuilderActive = nil then
+  begin
+    //fBuilderActive.Free;
+    var buildConfig := 0; //todo: We dont have selector for Config yet
+    fBuilderActive := fBuilderClass.Create(buildConfig, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  end;
   fBuilderActive.ExecuteStep(aStep);
 end;
 

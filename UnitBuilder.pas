@@ -167,6 +167,10 @@ begin
   TThread.Synchronize(nil,
     procedure
     begin
+      var sw := TStreamWriter.Create(ChangeFileExt(Application.ExeName, '.log'), True);
+      sw.WriteLine(aText);
+      sw.Free;
+
       meLog.Lines.Append(aText);
     end);
 end;

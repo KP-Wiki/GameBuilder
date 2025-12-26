@@ -523,7 +523,7 @@ begin
 
   var swConstants := TStreamWriter.Create('.\Installer\Constants_local.iss');
   // Folders are relative to ".\Installer\"
-  swConstants.WriteLine(Format('#define BuildFolder '#39'%s'#39, ['..\' + fBuildFolder]));
+  swConstants.WriteLine(Format('#define BuildFolder '#39'%s'#39, ['..\' + ExcludeTrailingPathDelimiter(fBuildFolder)]));
   swConstants.WriteLine(Format('#define OutputFolder '#39'%s'#39, ['..\']));
   swConstants.Free;
 
@@ -534,7 +534,8 @@ begin
   if CheckTerminated then Exit;
 
   CheckFileExists('InnoSetup', fInnoSetupPath);
-  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
+  // InnoSetup is way too verbose by default. Use /Q for quieter log
+  var cmdInstaller := Format('"%s" /Q ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
   CaptureConsoleOutput2('.\', cmdInstaller, procedure (const aMsg: string) begin fOnLog(aMsg); end);
 
   var szAfter := TFile.GetSize(fBuildResultInstaller);
