@@ -242,21 +242,19 @@ end;
 
 procedure TKMBuilderKP.Step04_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
-  var config := bcRelease;
-
-  BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', config, 'KnightsProvince.exe');
+  BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', aConfig, 'KnightsProvince.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', config, 'ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', aConfig, 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', config, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', config, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', aConfig, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 

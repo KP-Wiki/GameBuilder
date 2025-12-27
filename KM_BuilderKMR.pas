@@ -377,29 +377,27 @@ end;
 
 procedure TKMBuilderKMR.Step08_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
-  var config := bcRelease; //todo: Change
-
-  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', config, 'KaM_Remake.exe');
+  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', aConfig, 'KaM_Remake.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', config, 'Utils\Campaign builder\CampaignBuilder.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', aConfig, 'Utils\Campaign builder\CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', config, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', aConfig, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', config, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', aConfig, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', config, 'Utils\ScriptValidator\ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', aConfig, 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', config, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
