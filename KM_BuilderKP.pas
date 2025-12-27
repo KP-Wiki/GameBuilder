@@ -10,7 +10,6 @@ type
   private
     fGameName: string;
     fGameVersion: string;
-    fGameBuildConfig: Integer;
     fGameBuildFlags: string;
 
     fDelphiRSVarsPath: string;
@@ -24,26 +23,26 @@ type
     fBuildResult7zip: string;
     fBuildResultInstaller: string;
 
-    procedure Step00_CheckRepositories;
-    procedure Step01_Initialize;
-    procedure Step02_ScanForDebugFlags;
-    procedure Step03_DeleteTempFiles;
+    procedure Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
+    procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
+    procedure Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+    procedure Step03_DeleteTempFiles(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: Update scripting code and wiki
-    procedure Step04_BuildGameExe;
-    procedure Step05_PatchGameExe;
-    procedure Step06_PackData;
-    procedure Step07_Tests;
-    procedure Step08_ArrangeFolder;
-    procedure Step09_Pack7zip;
-    procedure Step10_PackInstaller;
-    procedure Step11_CreatePatch;
-    procedure Step12_RegisterOnKT;
-    procedure Step13_CommitAndTag;
+    procedure Step04_BuildGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step05_PatchGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step06_PackData(aConfig: TKMBuildConfiguration);
+    procedure Step07_Tests(aConfig: TKMBuildConfiguration);
+    procedure Step08_ArrangeFolder(aConfig: TKMBuildConfiguration);
+    procedure Step09_Pack7zip(aConfig: TKMBuildConfiguration);
+    procedure Step10_PackInstaller(aConfig: TKMBuildConfiguration);
+    procedure Step11_CreatePatch(aConfig: TKMBuildConfiguration);
+    procedure Step12_RegisterOnKT(aConfig: TKMBuildConfiguration);
+    procedure Step13_CommitAndTag(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: git Push wiki
   public
-    constructor Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
+    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
 
-    procedure ExecuteWholeProjectGroup; override;
+    procedure ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration); override;
 
     function GetInfo: string; override;
   end;
@@ -57,14 +56,13 @@ uses
 
 
 { TKMBuilderKP }
-constructor TKMBuilderKP.Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilderKP.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
 
   // Builder constants
   fGameName := 'Knights Province';
   fGameVersion := 'Alpha 13';
-  fGameBuildConfig := aConfig;
 
   // Thirdparty apps
   fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
@@ -104,7 +102,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.ExecuteWholeProjectGroup;
+procedure TKMBuilderKP.ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration);
 begin
   fWorker := TThread.CreateAnonymousThread(
     procedure
@@ -112,7 +110,7 @@ begin
       try
         fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
 
-        BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj');
+        BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj', aConfig);
 
         fOnDone;
       except
@@ -133,7 +131,6 @@ begin
   // Constants
   sb.AppendLine(Format('Game name:    %s', [fGameName]));
   sb.AppendLine(Format('Game version: %s', [fGameVersion]));
-  sb.AppendLine(Format('Build config: %s', [BUILD_CONFIG_NAME[GetScenarioBuildConfig(fGameBuildConfig)]]));
   sb.AppendLine(Format('Build flags:  %s', [fGameBuildFlags]));
 
   // External apps
@@ -156,7 +153,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step00_CheckRepositories;
+procedure TKMBuilderKP.Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('Update submodules ..');
   var cmdSubmoduleUpdate := 'git submodule update --init --merge --recursive --remote --progress';
@@ -166,7 +163,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step01_Initialize;
+procedure TKMBuilderKP.Step01_Initialize(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('Main project file', 'KnightsProvince.dproj');
 
@@ -191,7 +188,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step02_ScanForDebugFlags;
+procedure TKMBuilderKP.Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
 begin
   // DEFINEs:
   // - DEBUG
@@ -227,7 +224,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step03_DeleteTempFiles;
+procedure TKMBuilderKP.Step03_DeleteTempFiles(aConfig: TKMBuildConfiguration);
 begin
   // Delete folders
   fOnLog('Deleting temp folders ..');
@@ -243,7 +240,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step04_BuildGameExe;
+procedure TKMBuilderKP.Step04_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
   var config := bcRelease;
 
@@ -271,7 +268,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step05_PatchGameExe;
+procedure TKMBuilderKP.Step05_PatchGameExe(aConfig: TKMBuildConfiguration);
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -296,7 +293,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step06_PackData;
+procedure TKMBuilderKP.Step06_PackData(aConfig: TKMBuildConfiguration);
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -321,7 +318,7 @@ end;
 
 
 //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-procedure TKMBuilderKP.Step07_Tests;
+procedure TKMBuilderKP.Step07_Tests(aConfig: TKMBuildConfiguration);
 begin
   BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, 'TestingUnitTests.exe');
 
@@ -343,7 +340,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step08_ArrangeFolder;
+procedure TKMBuilderKP.Step08_ArrangeFolder(aConfig: TKMBuildConfiguration);
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -386,7 +383,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step09_Pack7zip;
+procedure TKMBuilderKP.Step09_Pack7zip(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('7-zip', f7zipPath);
 
@@ -407,7 +404,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step10_PackInstaller;
+procedure TKMBuilderKP.Step10_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
 
@@ -445,7 +442,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step11_CreatePatch;
+procedure TKMBuilderKP.Step11_CreatePatch(aConfig: TKMBuildConfiguration);
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -458,7 +455,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step12_RegisterOnKT;
+procedure TKMBuilderKP.Step12_RegisterOnKT(aConfig: TKMBuildConfiguration);
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
@@ -469,7 +466,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step13_CommitAndTag;
+procedure TKMBuilderKP.Step13_CommitAndTag(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);

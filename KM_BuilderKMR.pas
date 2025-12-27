@@ -10,7 +10,6 @@ type
   private
     fGameName: string;
     fGameVersion: string;
-    fGameBuildConfig: Integer;
     fGameBuildFlags: string;
 
     fTPRPath: string;
@@ -28,24 +27,24 @@ type
     fBuildFolder: string;
     fBuildResultInstaller: string;
 
-    procedure Step00_CheckRepositories;
-    procedure Step01_Initialize;
-    procedure Step02_ScanForDebugFlags;
-    procedure Step03_CopyNetAuthSecure;
-    procedure Step04_DeleteTempFiles;
-    procedure Step05_GenerateDocs;
-    procedure Step06_CopyPrePack;
-    procedure Step07_RxxPack;
-    procedure Step08_BuildGameExe;
-    procedure Step09_PatchGameExe;
-    procedure Step10_ArrangeFolder;
-    procedure Step11_PackInstaller;
-    procedure Step12_CommitAndTag;
+    procedure Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
+    procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
+    procedure Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+    procedure Step03_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
+    procedure Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
+    procedure Step05_GenerateDocs(aConfig: TKMBuildConfiguration);
+    procedure Step06_CopyPrePack(aConfig: TKMBuildConfiguration);
+    procedure Step07_RxxPack(aConfig: TKMBuildConfiguration);
+    procedure Step08_BuildGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step09_PatchGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
+    procedure Step11_PackInstaller(aConfig: TKMBuildConfiguration);
+    procedure Step12_CommitAndTag(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: git Push wiki
   public
-    constructor Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
+    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
 
-    procedure ExecuteWholeProjectGroup; override;
+    procedure ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration); override;
 
     function GetInfo: string; override;
   end;
@@ -59,14 +58,13 @@ uses
 
 
 { TKMBuilderKMR }
-constructor TKMBuilderKMR.Create(aConfig: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilderKMR.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
 
   // Builder constants
   fGameName := 'KaM Remake';
   fGameVersion := 'Beta';
-  fGameBuildConfig := aConfig;
 
   // Component paths (will be moved into INI or XML settings)
   fTPRPath := '..\KaM TPR\';
@@ -110,7 +108,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.ExecuteWholeProjectGroup;
+procedure TKMBuilderKMR.ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration);
 begin
   fWorker := TThread.CreateAnonymousThread(
     procedure
@@ -118,7 +116,7 @@ begin
       try
         fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
 
-        BuildWinGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj');
+        BuildWinGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj', aConfig);
 
         fOnDone;
       except
@@ -139,7 +137,6 @@ begin
   // Constants
   sb.AppendLine(Format('Game name:    %s', [fGameName]));
   sb.AppendLine(Format('Game version: %s', [fGameVersion]));
-  sb.AppendLine(Format('Build config: %s', [BUILD_CONFIG_NAME[GetScenarioBuildConfig(fGameBuildConfig)]]));
   sb.AppendLine(Format('Build flags:  %s', [fGameBuildFlags]));
 
   // Component paths
@@ -168,7 +165,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step00_CheckRepositories;
+procedure TKMBuilderKMR.Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('Update submodules ..');
   var cmdSubmoduleUpdate := 'git submodule update --init --merge --recursive --remote --progress';
@@ -210,7 +207,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step01_Initialize;
+procedure TKMBuilderKMR.Step01_Initialize(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('Main project file', 'KaM_Remake.dproj');
 
@@ -240,7 +237,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step02_ScanForDebugFlags;
+procedure TKMBuilderKMR.Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
 begin
   // DEFINEs:
   // - DEBUG
@@ -276,7 +273,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step03_CopyNetAuthSecure;
+procedure TKMBuilderKMR.Step03_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
 begin
   var nsaSource := fPrivateRepoPath + 'src\net\KM_NetAuthSecure.pas';
   var nsaDest := '.\src\net\KM_NetAuthSecure.pas';
@@ -289,7 +286,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step04_DeleteTempFiles;
+procedure TKMBuilderKMR.Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
 begin
   // Delete folders
   fOnLog('Deleting temp folders ..');
@@ -311,7 +308,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step05_GenerateDocs;
+procedure TKMBuilderKMR.Step05_GenerateDocs(aConfig: TKMBuildConfiguration);
 const
   LANG: array [0..3] of string = ('eng', 'ger', 'pol', 'rus');
 begin
@@ -329,7 +326,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step06_CopyPrePack;
+procedure TKMBuilderKMR.Step06_CopyPrePack(aConfig: TKMBuildConfiguration);
 begin
   // Copy palettes and fonts
   CheckFolderExists('Data GFX', fPrivateRepoPath + 'data\gfx\');
@@ -350,7 +347,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step07_RxxPack;
+procedure TKMBuilderKMR.Step07_RxxPack(aConfig: TKMBuildConfiguration);
 begin
   // The tool is thought to be quite reliable, hence we opt for "Release" build, so that it works faster
   BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, '.\Utils\RXXPacker\RXXPacker.exe');
@@ -378,9 +375,9 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step08_BuildGameExe;
+procedure TKMBuilderKMR.Step08_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
-  var config := bcRelease;
+  var config := bcRelease; //todo: Change
 
   BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', config, 'KaM_Remake.exe');
 
@@ -419,7 +416,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step09_PatchGameExe;
+procedure TKMBuilderKMR.Step09_PatchGameExe(aConfig: TKMBuildConfiguration);
 begin
   var exeSizeBefore := TFile.GetSize('KaM_Remake.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -444,7 +441,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step10_ArrangeFolder;
+procedure TKMBuilderKMR.Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -511,7 +508,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step11_PackInstaller;
+procedure TKMBuilderKMR.Step11_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('Installer secret', fPrivateRepoPath + 'Installer\CheckKaM.iss');
 
@@ -545,7 +542,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step12_CommitAndTag;
+procedure TKMBuilderKMR.Step12_CommitAndTag(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);

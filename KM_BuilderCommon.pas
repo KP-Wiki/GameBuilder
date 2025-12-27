@@ -17,7 +17,7 @@ const
 type
   TKMBuilderClass = class of TKMBuilder;
 
-  TKMEvent = procedure of object;
+  TKMEvent = procedure (aConfig: TKMBuildConfiguration) of object;
   TKMEventStepBegin = reference to procedure (aStep: Integer);
   TKMEventStepDone = reference to procedure (aStep: Integer; aTimeMsec: Integer);
 
@@ -65,15 +65,15 @@ type
     function CheckTerminated: Boolean;
 
     procedure BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; const aExe: string);
-    procedure BuildWinGroup(const aRSVars, aGroup: string);
+    procedure BuildWinGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
-    constructor Create(aScenario: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
+    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
     destructor Destroy; override;
 
     procedure ExecuteConfig(aScenario: Integer);
-    procedure ExecuteStep(aStep: Integer);
-    procedure ExecuteWholeProjectGroup; virtual; abstract;
+    procedure ExecuteStep(aStep: Integer; aConfig: TKMBuildConfiguration);
+    procedure ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration); virtual; abstract;
 
     // Utility getters
     function GetInfo: string; virtual; abstract;
@@ -119,7 +119,7 @@ end;
 
 
 { TKMBuilder }
-constructor TKMBuilder.Create(aScenario: Integer; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilder.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited Create;
 
@@ -312,13 +312,13 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWinGroup(const aRSVars, aGroup: string);
+procedure TKMBuilder.BuildWinGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('RSVars', aRSVars);
 
   fOnLog('Building group ' + aGroup);
   begin
-    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=Release /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aGroup]);
+    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=%s /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aGroup, BUILD_CONFIG_NAME[aConfig]]);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
@@ -383,10 +383,10 @@ end;
 
 procedure TKMBuilder.ExecuteConfig(aScenario: Integer);
 var
-  thisConfig: Integer;
+  thisScenario: Integer;
 begin
   // Try to capture into local variable, just in case
-  thisConfig := aScenario;
+  thisScenario := aScenario;
 
   fWorker := TThread.CreateAnonymousThread(
     procedure
@@ -395,13 +395,13 @@ begin
         fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
 
         for var I := 0 to fBuildSteps.Count - 1 do
-        if GetScenarioContainsStep(thisConfig, I) then
+        if GetScenarioContainsStep(thisScenario, I) then
         begin
           fOnStepBegin(I);
 
           var tickBegin := GetTickCount;
 
-          fBuildSteps[I].Method;
+          fBuildSteps[I].Method(GetScenarioBuildConfig(thisScenario));
 
           fOnStepDone(I, GetTickCount - tickBegin);
 
@@ -420,12 +420,14 @@ begin
 end;
 
 
-procedure TKMBuilder.ExecuteStep(aStep: Integer);
+procedure TKMBuilder.ExecuteStep(aStep: Integer; aConfig: TKMBuildConfiguration);
 var
   thisStep: Integer;
+  thisConfig: TKMBuildConfiguration;
 begin
   // Try to capture into local variable, just in case
   thisStep := aStep;
+  thisConfig := aConfig;
 
   fWorker := TThread.CreateAnonymousThread(
     procedure
@@ -437,7 +439,7 @@ begin
 
         var tickBegin := GetTickCount;
 
-        fBuildSteps[thisStep].Method;
+        fBuildSteps[thisStep].Method(thisConfig);
 
         fOnStepDone(thisStep, GetTickCount - tickBegin);
 

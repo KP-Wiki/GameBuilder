@@ -38,7 +38,7 @@ object Form1: TForm1
   end
   object Label4: TLabel
     Left = 16
-    Top = 128
+    Top = 152
     Width = 31
     Height = 15
     Caption = 'Steps:'
@@ -84,9 +84,9 @@ object Form1: TForm1
   end
   object pnlBuildSteps: TPanel
     Left = 16
-    Top = 144
+    Top = 168
     Width = 289
-    Height = 425
+    Height = 409
     BevelOuter = bvNone
     Caption = '<Builder steps. Filled in dynamically>'
     Color = clMaroon
@@ -96,7 +96,7 @@ object Form1: TForm1
     Left = 16
     Top = 32
     Width = 289
-    Height = 89
+    Height = 65
     BevelOuter = bvNone
     Caption = '<Builder scenarios. Filled in dynamically>'
     TabOrder = 3
@@ -132,5 +132,19 @@ object Form1: TForm1
     Caption = 'Build all projects'
     TabOrder = 5
     OnClick = btnBuildAllProjectsClick
+  end
+  object rgBuildConfiguration: TRadioGroup
+    Left = 8
+    Top = 104
+    Width = 193
+    Height = 41
+    Caption = ' Configuration '
+    Columns = 2
+    ItemIndex = 0
+    Items.Strings = (
+      'Debug'
+      'Release')
+    TabOrder = 6
+    OnClick = rgBuildConfigurationClick
   end
 end

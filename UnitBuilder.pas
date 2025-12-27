@@ -3,7 +3,7 @@ interface
 uses
   System.Classes,
   Vcl.Forms, Vcl.StdCtrls, Vcl.Controls, Vcl.ExtCtrls,
-  KM_BuilderManager;
+  KM_BuilderManager, KM_BuilderCommon;
 
 
 type
@@ -19,17 +19,21 @@ type
     Label4: TLabel;
     btnBuildAllProjects: TButton;
     Label5: TLabel;
+    rgBuildConfiguration: TRadioGroup;
     procedure FormCreate(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnStepClick(Sender: TObject);
     procedure btnScenarioClick(Sender: TObject);
     procedure btnBuildAllProjectsClick(Sender: TObject);
+    procedure rgBuildConfigurationClick(Sender: TObject);
   private
     fGame: TKMBuilderGame;
     fBuilderManager: TKMBuilderManager;
     fScenarioButton: array {Scenario} of TButton;
     fStepButton: array {Step} of TButton;
     fStepPanel: array {Step} of TPanel;
+    fDefaultBuildConfiguration: TKMBuildConfiguration;
+
     procedure CreateButtons;
     procedure ControlsEnable(aFlag: Boolean);
     procedure UpdateStepVisibility(aScenario: Integer);
@@ -60,6 +64,8 @@ begin
   else
   if FileExists('KnightsProvince.dpr') then
     fGame := bgKP;
+
+  fDefaultBuildConfiguration := bcDebug;
 
   fBuilderManager := TKMBuilderManager.Create(fGame, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderScenarioDone);
 
@@ -187,20 +193,29 @@ end;
 procedure TForm1.HandleBuildMouseEnter(Sender: TObject);
 begin
   var buildConfig := TButton(Sender).Tag;
+
+  rgBuildConfiguration.ItemIndex := Ord(fBuilderManager.GetScenarioConfiguration(buildConfig)) - 1;
   UpdateStepVisibility(buildConfig);
 end;
 
 
 procedure TForm1.HandleBuildMouseLeave(Sender: TObject);
 begin
+  rgBuildConfiguration.ItemIndex := Ord(fDefaultBuildConfiguration) - 1;
   UpdateStepVisibility(-1);
+end;
+
+
+procedure TForm1.rgBuildConfigurationClick(Sender: TObject);
+begin
+  fDefaultBuildConfiguration := TKMBuildConfiguration(rgBuildConfiguration.ItemIndex + 1);
 end;
 
 
 procedure TForm1.btnBuildAllProjectsClick(Sender: TObject);
 begin
   meLog.Lines.Append('>>>--- Building all projects ..');
-  fBuilderManager.ExecuteWholeProjectGroup;
+  fBuilderManager.ExecuteWholeProjectGroup(fDefaultBuildConfiguration);
   meLog.Lines.Append('>>>--- Building all projects done');
 end;
 
@@ -225,7 +240,7 @@ begin
 
   ControlsEnable(False);
   var step := TButton(Sender).Tag;
-  fBuilderManager.ExecuteStep(step);
+  fBuilderManager.ExecuteStep(step, fDefaultBuildConfiguration);
 end;
 
 

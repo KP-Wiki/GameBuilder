@@ -27,14 +27,15 @@ type
   public
     constructor Create(aGame: TKMBuilderGame; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
     procedure ExecuteScenario(aScenario: Integer);
-    procedure ExecuteStep(aStep: Integer);
-    procedure ExecuteWholeProjectGroup;
+    procedure ExecuteStep(aStep: Integer; aConfig: TKMBuildConfiguration);
+    procedure ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration);
     procedure Stop;
 
     // Utility getters
     function GetInfo: string;
     function GetScenarioCount: Integer;
     function GetScenarioName(aScenario: Integer): string;
+    function GetScenarioConfiguration(aScenario: Integer): TKMBuildConfiguration;
     function GetScenarioContainsStep(aScenario, aStep: Integer): Boolean;
     function GetStepCount: Integer;
     function GetStepName(aStep: Integer): string;
@@ -63,7 +64,7 @@ begin
   fOnStepDone := aOnStepDone;
   fOnDone := aOnDone;
 
-  fBuilderSwatch := fBuilderClass.Create(-1, nil, nil, nil, nil);
+  fBuilderSwatch := fBuilderClass.Create(nil, nil, nil, nil);
 end;
 
 
@@ -88,6 +89,12 @@ begin
 end;
 
 
+function TKMBuilderManager.GetScenarioConfiguration(aScenario: Integer): TKMBuildConfiguration;
+begin
+  Result := fBuilderSwatch.GetScenarioBuildConfig(aScenario);
+end;
+
+
 function TKMBuilderManager.GetScenarioContainsStep(aScenario, aStep: Integer): Boolean;
 begin
   Result := fBuilderSwatch.GetScenarioContainsStep(aScenario, aStep);
@@ -109,29 +116,27 @@ end;
 procedure TKMBuilderManager.ExecuteScenario(aScenario: Integer);
 begin
   fBuilderActive.Free;
-  fBuilderActive := fBuilderClass.Create(aScenario, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  fBuilderActive := fBuilderClass.Create(fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
   fBuilderActive.ExecuteConfig(aScenario);
 end;
 
 
-procedure TKMBuilderManager.ExecuteStep(aStep: Integer);
+procedure TKMBuilderManager.ExecuteStep(aStep: Integer; aConfig: TKMBuildConfiguration);
 begin
   if fBuilderActive = nil then
   begin
     //fBuilderActive.Free;
-    var buildConfig := 0; //todo: We dont have selector for Config yet
-    fBuilderActive := fBuilderClass.Create(buildConfig, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+    fBuilderActive := fBuilderClass.Create(fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
   end;
-  fBuilderActive.ExecuteStep(aStep);
+  fBuilderActive.ExecuteStep(aStep, aConfig);
 end;
 
 
-procedure TKMBuilderManager.ExecuteWholeProjectGroup;
+procedure TKMBuilderManager.ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration);
 begin
   fBuilderActive.Free;
-  var buildConfig := 0; //todo: We dont have selector for Config yet
-  fBuilderActive := fBuilderClass.Create(buildConfig, fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
-  fBuilderActive.ExecuteWholeProjectGroup;
+  fBuilderActive := fBuilderClass.Create(fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  fBuilderActive.ExecuteWholeProjectGroup(aConfig);
 end;
 
 
