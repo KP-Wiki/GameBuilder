@@ -214,9 +214,7 @@ end;
 
 procedure TForm1.btnBuildAllProjectsClick(Sender: TObject);
 begin
-  meLog.Lines.Append('>>>--- Building all projects ..');
   fBuilderManager.ExecuteWholeProjectGroup(fDefaultBuildConfiguration);
-  meLog.Lines.Append('>>>--- Building all projects done');
 end;
 
 
