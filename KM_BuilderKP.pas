@@ -450,11 +450,11 @@ begin
   CheckFolderExists('Maps repository', fMapsRepoPath);
   CopyFolder(fMapsRepoPath + 'campaigns\', fBuildFolder + 'campaigns\');
   CopyFolder(fMapsRepoPath + 'maps\', fBuildFolder + 'maps\');
-  CopyFolder(fMapsRepoPath + 'mapsdev\', fBuildFolder + 'mapsdev\');
 
   if CheckTerminated then Exit;
 
   //CopyFolder('.\ExtAI', fBuildFolder + 'ExtAI\');
+  CopyFolder('.\mapsdev\', fBuildFolder + 'mapsdev\');
   CopyFolder('.\mods\', fBuildFolder + 'mods\');
   CopyFolder('.\Win32\', fBuildFolder);
 
