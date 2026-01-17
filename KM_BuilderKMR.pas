@@ -465,10 +465,13 @@ begin
   CopyFile('.\Modding graphics\Readme.txt', fBuildFolder + 'Modding graphics\Readme.txt');
 
   // Copy maps directly to build folder, as we may have altered test maps locally that we dont want to loose
+  CheckFolderExists('Maps repository', fMapsRepoPath);
   CopyFolder(fMapsRepoPath + 'Campaigns\', fBuildFolder + 'Campaigns\');
   CopyFolder(fMapsRepoPath + 'Maps\', fBuildFolder + 'Maps\');
   CopyFolder(fMapsRepoPath + 'MapsMP\', fBuildFolder + 'MapsMP\');
   CopyFolder(fMapsRepoPath + 'Tutorials\', fBuildFolder + 'Tutorials\');
+
+  if CheckTerminated then Exit;
 
   CopyFolder(fPrivateRepoPath + 'data\', fBuildFolder + 'data\');
   CopyFolder(fPrivateRepoPath + 'Video\Campaigns\', fBuildFolder + 'Campaigns\');
