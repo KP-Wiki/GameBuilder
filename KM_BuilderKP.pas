@@ -119,6 +119,12 @@ begin
 
         BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj', aConfig);
 
+        if CheckTerminated then Exit;
+
+        // FPC projects dont have a group, but we still want to build them too
+        BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
+        BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
+
         fOnDone;
       except
         on E: Exception do
