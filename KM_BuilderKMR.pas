@@ -27,7 +27,7 @@ type
     fBuildFolder: string;
     fBuildResultInstaller: string;
 
-    procedure Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
+    procedure Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
     procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
     procedure Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
     procedure Step03_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
@@ -85,7 +85,7 @@ begin
   fBuildResultInstaller := '<no filename>';
 
   // Steps (order is important)
-  fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
+  fBuildSteps.Add(TKMBuildStep.New('Update repositories',   Step00_UpdateRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step02_ScanForDebugFlags));
   fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step03_CopyNetAuthSecure));
@@ -165,44 +165,44 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('Update submodules ..');
-  var cmdSubmoduleUpdate := 'git submodule update --init --merge --recursive --remote --progress';
-  var resSubmoduleUpdate := CaptureConsoleOutput('.\', cmdSubmoduleUpdate);
-  fOnLog(resSubmoduleUpdate);
+  var cmdUpdateSubmodules := 'git submodule update --init --merge --recursive --remote --progress';
+  var resUpdateSubmodules := CaptureConsoleOutput('.\', cmdUpdateSubmodules);
+  fOnLog(resUpdateSubmodules);
   fOnLog('Update submodules done' + sLineBreak);
 
   if CheckTerminated then Exit;
 
   fOnLog('Checkout master ..');
-  var cmdMasterCheckuot := 'git checkout master';
-  var resMasterCheckout := CaptureConsoleOutput('.\', cmdMasterCheckuot);
-  fOnLog(resMasterCheckout);
+  var cmdCheckuotMaster := 'git checkout master';
+  var resCheckoutMaster := CaptureConsoleOutput('.\', cmdCheckuotMaster);
+  fOnLog(resCheckoutMaster);
   fOnLog('Checkout master done' + sLineBreak);
 
   if CheckTerminated then Exit;
 
   fOnLog('Pull master ..');
-  var cmdMasterPull := 'git pull';
-  var resMasterPull := CaptureConsoleOutput('.\', cmdMasterPull);
-  fOnLog(resMasterPull);
+  var cmdPullMaster := 'git pull';
+  var resPullMaster := CaptureConsoleOutput('.\', cmdPullMaster);
+  fOnLog(resPullMaster);
   fOnLog('Pull master done' + sLineBreak);
 
   if CheckTerminated then Exit;
 
   fOnLog('Pull private ..');
-  var cmdPrivatePull := 'git pull';
-  var resPrivatePull := CaptureConsoleOutput(fPrivateRepoPath, cmdPrivatePull);
-  fOnLog(resPrivatePull);
+  var cmdPullPrivate := 'git pull';
+  var resPullPrivate := CaptureConsoleOutput(fPrivateRepoPath, cmdPullPrivate);
+  fOnLog(resPullPrivate);
   fOnLog('Pull private done' + sLineBreak);
 
   if CheckTerminated then Exit;
 
   fOnLog('Pull maps ..');
-  var cmdMapsPull := 'git pull';
-  var resMapsPull := CaptureConsoleOutput(fMapsRepoPath, cmdMapsPull);
-  fOnLog(resMapsPull);
+  var cmdPullMaps := 'git pull';
+  var resPullMaps := CaptureConsoleOutput(fMapsRepoPath, cmdPullMaps);
+  fOnLog(resPullMaps);
   fOnLog('Pull maps done' + sLineBreak);
 end;
 

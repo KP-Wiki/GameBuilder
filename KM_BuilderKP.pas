@@ -25,7 +25,7 @@ type
     fBuildResult7zip: string;
     fBuildResultInstaller: string;
 
-    procedure Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
+    procedure Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
     procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
     procedure Step02_CheckVersion(aConfig: TKMBuildConfiguration);
     procedure Step03_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
@@ -84,7 +84,7 @@ begin
   fBuildResultInstaller := '<no filename>';
 
   // Steps (order is important)
-  fBuildSteps.Add(TKMBuildStep.New('Check repositories',    Step00_CheckRepositories));
+  fBuildSteps.Add(TKMBuildStep.New('Update repositories',   Step00_UpdateRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Check version',         Step02_CheckVersion));
   fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step03_ScanForDebugFlags));
@@ -170,20 +170,20 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step00_CheckRepositories(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('Update submodules ..');
-  var cmdSubmoduleUpdate := 'git submodule update --init --merge --recursive --remote --progress';
-  var resSubmoduleUpdate := CaptureConsoleOutput('.\', cmdSubmoduleUpdate);
-  fOnLog(resSubmoduleUpdate);
+  var cmdUpdateSubmodules := 'git submodule update --init --merge --recursive --remote --progress';
+  var resUpdateSubmodules := CaptureConsoleOutput('.\', cmdUpdateSubmodules);
+  fOnLog(resUpdateSubmodules);
   fOnLog('Update submodules done' + sLineBreak);
 
   if CheckTerminated then Exit;
 
   fOnLog('Pull maps ..');
-  var cmdMapsPull := 'git pull';
-  var resMapsPull := CaptureConsoleOutput(fMapsRepoPath, cmdMapsPull);
-  fOnLog(resMapsPull);
+  var cmdPullMaps := 'git pull';
+  var resPullMaps := CaptureConsoleOutput(fMapsRepoPath, cmdPullMaps);
+  fOnLog(resPullMaps);
   fOnLog('Pull maps done' + sLineBreak);
 end;
 
