@@ -333,7 +333,7 @@ begin
 
   fOnLog('Building ' + aExe);
   begin
-    var cmdFpc := Format('cmd.exe /C "CALL "%s" -q "%s""', [aFpcUpDeluxe, aProject]);
+    var cmdFpc := Format('cmd.exe /C "CALL "%s" -q -q "%s""', [aFpcUpDeluxe, aProject]);
     var res := CaptureConsoleOutput('.\', cmdFpc);
     fOnLog(res);
   end;
