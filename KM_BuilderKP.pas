@@ -65,7 +65,7 @@ begin
 
   // Builder constants
   fGameName := 'Knights Province';
-  fGameVersion := 'Alpha 13.1';
+  fGameVersion := 'Alpha 13.2';
 
   // Component paths (will be moved into INI or XML settings)
   fMapsRepoPath := '..\knights_province.public.git\';
