@@ -34,7 +34,7 @@ type
     procedure Step05_BuildGameExe(aConfig: TKMBuildConfiguration);
     procedure Step06_PatchGameExe(aConfig: TKMBuildConfiguration);
     procedure Step07_PackData(aConfig: TKMBuildConfiguration);
-    procedure Step08_Tests(aConfig: TKMBuildConfiguration);
+    procedure Step08_RunTests(aConfig: TKMBuildConfiguration);
     procedure Step09_ArrangeFolder(aConfig: TKMBuildConfiguration);
     procedure Step10_Pack7zip(aConfig: TKMBuildConfiguration);
     procedure Step11_PackInstaller(aConfig: TKMBuildConfiguration);
@@ -92,7 +92,7 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step05_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step06_PatchGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step07_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Tests',                 Step08_Tests));
+  fBuildSteps.Add(TKMBuildStep.New('Run tests',             Step08_RunTests));
   fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step09_ArrangeFolder));
   fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step10_Pack7zip));
   fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step11_PackInstaller));
@@ -421,8 +421,9 @@ end;
 
 
 //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-procedure TKMBuilderKP.Step08_Tests(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step08_RunTests(aConfig: TKMBuildConfiguration);
 begin
+  // Unit tests
   BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, 'TestingUnitTests.exe');
 
   var cmdUnitTests := '.\TestingUnitTests.exe -test';
@@ -432,6 +433,7 @@ begin
   if Pos('UNIT TESTS PASSED', resUnitTests) = 0 then
     raise Exception.Create('Unit tests did not succeed');
 
+  // Game tests
   BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', bcRelease, 'TestingGameTests.exe');
 
   var cmdGameTests := '.\TestingGameTests.exe -test';
