@@ -229,8 +229,46 @@ begin
 
   if CheckTerminated then Exit;
 
-  // Write revision number for game exe
+  // Write a revision number for the game exe
   TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM = ' + IntToStr(fBuildRevision));
+
+  // Write a revision number and a build date into Changelog.txt
+  begin
+    var sl := TStringList.Create;
+    sl.LoadFromFile('.\Changelog.txt');
+
+    var placeholderFound := False;
+    for var I := 0 to sl.Count - 1 do
+    begin
+      var placeholder := Pos('r_____ []', sl[I]);
+      if placeholder > 0 then
+      begin
+        placeholderFound := True;
+
+        if (I + 2 >= sl.Count - 1) or (sl[I + 1] = '') or (sl[I + 2] = '') then
+          raise Exception.Create('Version placeholder in Changelog.txt must be followed by a separator line and at least one entry');
+
+        // We dont trust system function for date formatting, they fallback to native OS format
+        var buildYear := YearOf(Now);
+        var buildMonth := MonthOf(Now);
+        var buildDay := DayOf(Now);
+        var verString := LeftStr(sl[I], placeholder - 2) + Format(' r%d [%4d.%.2d.%.2d]', [fBuildRevision, buildYear, buildMonth, buildDay]);
+
+        // Insert below, (so that we keep the placeholder for the next version above)
+        sl.Insert(I + 1, DupeString('-', 30));
+        sl.Insert(I + 2, '');
+        sl.Insert(I + 3, '');
+        sl.Insert(I + 4, verString);
+        Break;
+      end;
+    end;
+
+    if not placeholderFound then
+      raise Exception.Create('Version placeholder could not be found in the Changelog.txt');
+
+    sl.SaveToFile('.\Changelog.txt');
+    sl.Free;
+  end;
 
   fBuildFolder := Format('%s %s r%d\', [fGameName, fGameVersion, fBuildRevision]);
   fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + '.exe';
@@ -481,6 +519,8 @@ begin
   CopyFolder(fPreviousVersionPath + 'data\sfx\', fBuildFolder + 'data\sfx\');
   CopyFolder(fPreviousVersionPath + 'Music\', fBuildFolder + 'Music\');
   CopyFilesRecursive(fPreviousVersionPath + 'Campaigns\', fBuildFolder + 'Campaigns\', '*.mp3', True);
+
+  CopyFile('.\Changelog.txt', fBuildFolder + 'Changelog.txt');
 
   // Copy selected executable files
   CopyFile('.\KaM_Remake.exe', fBuildFolder + 'KaM_Remake.exe');
