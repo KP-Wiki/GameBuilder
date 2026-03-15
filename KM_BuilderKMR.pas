@@ -32,6 +32,7 @@ type
     procedure Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
     procedure Step03_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
     procedure Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
+    //todo -cBuilder: Update scripting code and wiki
     procedure Step05_GenerateDocs(aConfig: TKMBuildConfiguration);
     procedure Step06_CopyPrePack(aConfig: TKMBuildConfiguration);
     procedure Step07_RxxPack(aConfig: TKMBuildConfiguration);
@@ -146,7 +147,7 @@ begin
   sb.AppendLine(Format('TPR:            %s', [fTPRPath]));
   sb.AppendLine(Format('Private repo:   %s', [fPrivateRepoPath]));
 
-  // Thirdparty apps
+  // External apps
   sb.AppendLine('');
   sb.AppendLine(Format('Delphi rsvars:  %s', [fDelphiRSVarsPath]));
   sb.AppendLine(Format('FPCUPdeluxe:    %s', [fFPCUPdeluxePath]));
@@ -211,15 +212,8 @@ procedure TKMBuilderKMR.Step01_Initialize(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('Main project file', 'KaM_Remake.dproj');
 
-//  for var I := 0 to 499 do
-//  begin
-//    Sleep(500);
-//    fOnLog(IntToStr(I));
-//    if CheckTerminated then Exit;
-//  end;
-
-  fOnLog('rev-list ..');
   // Get revision number from git
+  fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
 
@@ -229,7 +223,7 @@ begin
 
   if CheckTerminated then Exit;
 
-  // Write a revision number for the game exe
+  // Write revision number for the game exe
   TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM = ' + IntToStr(fBuildRevision));
 
   // Write a revision number and a build date into Changelog.txt
@@ -598,4 +592,3 @@ end;
 
 
 end.
-

@@ -70,7 +70,7 @@ begin
   // Component paths (will be moved into INI or XML settings)
   fMapsRepoPath := '..\knights_province.public.git\';
 
-  // Thirdparty apps
+  // External apps
   fDelphiRSVarsPath := 'C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat';
   fFPCUPdeluxePath := 'C:\fpcupdeluxe\lazarus\lazbuild.exe';
   fMadExceptPath := 'C:\Program Files (x86)\madCollection\madExcept\Tools\madExceptPatch.exe';
@@ -192,6 +192,7 @@ procedure TKMBuilderKP.Step01_Initialize(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('Main project file', 'KnightsProvince.dproj');
 
+  // Get revision number from git
   fOnLog('rev-list ..');
   var cmdRevList := Format('cmd.exe /C "@FOR /F "USEBACKQ tokens=*" %%F IN (`git rev-list --count HEAD`) DO @ECHO %%F"', []);
   var res := CaptureConsoleOutput('.\', cmdRevList);
@@ -202,7 +203,7 @@ begin
 
   if CheckTerminated then Exit;
 
-  // Write revision number for game exe and launcher/updater
+  // Write revision number for the game exe and launcher/updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
   TFile.WriteAllText('.\version', fGameVersion + ' r' + IntToStr(fBuildRevision));
 
