@@ -347,7 +347,7 @@ begin
         var tagProductVersionOpen := Pos('ProductVersion=', sl[I]);
         var tagProductVersionClose := Pos(';', sl[I], tagProductVersionOpen);
 
-        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d.%d', [0, 13, 2]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
+        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [0, 13, 2]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
         Inc(countProductVersion);
       end;
     end;
