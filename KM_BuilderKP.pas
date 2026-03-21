@@ -28,20 +28,20 @@ type
     procedure Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
     procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
     procedure Step02_CheckVersion(aConfig: TKMBuildConfiguration);
-    procedure Step02b_WriteVersion(aConfig: TKMBuildConfiguration);
-    procedure Step03_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
-    procedure Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
+    procedure Step03_WriteVersion(aConfig: TKMBuildConfiguration);
+    procedure Step04_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+    procedure Step05_DeleteTempFiles(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: Update scripting code and wiki
-    procedure Step05_BuildGameExe(aConfig: TKMBuildConfiguration);
-    procedure Step06_PatchGameExe(aConfig: TKMBuildConfiguration);
-    procedure Step07_PackData(aConfig: TKMBuildConfiguration);
-    procedure Step08_RunTests(aConfig: TKMBuildConfiguration);
-    procedure Step09_ArrangeFolder(aConfig: TKMBuildConfiguration);
-    procedure Step10_Pack7zip(aConfig: TKMBuildConfiguration);
-    procedure Step11_PackInstaller(aConfig: TKMBuildConfiguration);
-    procedure Step12_CreatePatch(aConfig: TKMBuildConfiguration);
-    procedure Step13_RegisterOnKT(aConfig: TKMBuildConfiguration);
-    procedure Step14_CommitAndTag(aConfig: TKMBuildConfiguration);
+    procedure Step06_BuildGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step07_PatchGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step08_PackData(aConfig: TKMBuildConfiguration);
+    procedure Step09_RunTests(aConfig: TKMBuildConfiguration);
+    procedure Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
+    procedure Step11_Pack7zip(aConfig: TKMBuildConfiguration);
+    procedure Step12_PackInstaller(aConfig: TKMBuildConfiguration);
+    procedure Step13_CreatePatch(aConfig: TKMBuildConfiguration);
+    procedure Step14_RegisterOnKT(aConfig: TKMBuildConfiguration);
+    procedure Step15_CommitAndTag(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
@@ -88,19 +88,19 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Update repositories',   Step00_UpdateRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Check version',         Step02_CheckVersion));
-  fBuildSteps.Add(TKMBuildStep.New('Write version',         Step02b_WriteVersion));
-  fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step03_ScanForDebugFlags));
-  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step04_DeleteTempFiles));
-  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step05_BuildGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step06_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step07_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Run tests',             Step08_RunTests));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step09_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step10_Pack7zip));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step11_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step12_CreatePatch));
-  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step13_RegisterOnKT));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step14_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Write version',         Step03_WriteVersion));
+  fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step04_ScanForDebugFlags));
+  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step05_DeleteTempFiles));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step06_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step07_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step08_PackData));
+  fBuildSteps.Add(TKMBuildStep.New('Run tests',             Step09_RunTests));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step10_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step11_Pack7zip));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step12_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step13_CreatePatch));
+  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step14_RegisterOnKT));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step15_CommitAndTag));
 
   // Scenarios
   // Nightly build (same as Release, without Installer)
@@ -292,7 +292,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step02b_WriteVersion(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step03_WriteVersion(aConfig: TKMBuildConfiguration);
 begin
   // Write revision number for the game exe and launcher/updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
@@ -368,7 +368,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step03_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step04_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
 begin
   // DEFINEs:
   // - DEBUG
@@ -404,7 +404,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step05_DeleteTempFiles(aConfig: TKMBuildConfiguration);
 begin
   // Delete folders
   fOnLog('Deleting temp folders ..');
@@ -420,7 +420,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step05_BuildGameExe(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step06_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
   BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', aConfig, 'KnightsProvince.exe');
 
@@ -446,7 +446,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step06_PatchGameExe(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step07_PatchGameExe(aConfig: TKMBuildConfiguration);
 begin
   var exeSizeBefore := TFile.GetSize('KnightsProvince.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -471,7 +471,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step07_PackData(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step08_PackData(aConfig: TKMBuildConfiguration);
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -496,7 +496,7 @@ end;
 
 
 //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-procedure TKMBuilderKP.Step08_RunTests(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step09_RunTests(aConfig: TKMBuildConfiguration);
 begin
   // Unit tests
   BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, 'TestingUnitTests.exe');
@@ -520,7 +520,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step09_ArrangeFolder(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -567,7 +567,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step10_Pack7zip(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step11_Pack7zip(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('7-zip', f7zipPath);
 
@@ -588,7 +588,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step11_PackInstaller(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step12_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
 
@@ -626,7 +626,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step12_CreatePatch(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step13_CreatePatch(aConfig: TKMBuildConfiguration);
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -639,7 +639,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step13_RegisterOnKT(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step14_RegisterOnKT(aConfig: TKMBuildConfiguration);
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
@@ -650,7 +650,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step14_CommitAndTag(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step15_CommitAndTag(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
