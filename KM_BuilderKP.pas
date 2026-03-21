@@ -28,6 +28,7 @@ type
     procedure Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
     procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
     procedure Step02_CheckVersion(aConfig: TKMBuildConfiguration);
+    procedure Step02b_WriteVersion(aConfig: TKMBuildConfiguration);
     procedure Step03_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
     procedure Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: Update scripting code and wiki
@@ -87,6 +88,7 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Update repositories',   Step00_UpdateRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Check version',         Step02_CheckVersion));
+  fBuildSteps.Add(TKMBuildStep.New('Write version',         Step02b_WriteVersion));
   fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step03_ScanForDebugFlags));
   fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step04_DeleteTempFiles));
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step05_BuildGameExe));
@@ -102,10 +104,10 @@ begin
 
   // Scenarios
   // Nightly build (same as Release, without Installer)
-  fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,   12,13,14]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,   13,14,15]));
 
   // Public release version
-  fBuildScenarios.Add(TKMBuildScenario.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]));
 end;
 
 
@@ -203,10 +205,6 @@ begin
 
   if CheckTerminated then Exit;
 
-  // Write revision number for the game exe and launcher/updater
-  TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
-  TFile.WriteAllText('.\version', fGameVersion + ' r' + IntToStr(fBuildRevision));
-
   var dtNow := Now;
   fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fGameVersion, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
@@ -291,6 +289,82 @@ begin
 
     fOnLog(Format('Game version in "%s" - ok', [changelogFilename]));
   end;
+end;
+
+
+procedure TKMBuilderKP.Step02b_WriteVersion(aConfig: TKMBuildConfiguration);
+begin
+  // Write revision number for the game exe and launcher/updater
+  TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
+  TFile.WriteAllText('.\version', fGameVersion + ' r' + IntToStr(fBuildRevision));
+
+  var countVerInfoMajor := 0;
+  var countVerInfoMinor := 0;
+  var countVerInfoRelease := 0;
+  var countVerInfoBuild := 0;
+  var countFileVersion := 0;
+  var countProductVersion := 0;
+
+  var sl := TStringList.Create;
+  try
+    sl.LoadFromFile('.\KnightsProvince.dproj');
+    for var I := 0 to sl.Count - 1 do
+    begin
+      var tagVerInfoMajorOpen := Pos('<VerInfo_MajorVer>', sl[I]);
+      if tagVerInfoMajorOpen > 0 then
+      begin
+        sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [0]);
+        Inc(countVerInfoMajor);
+      end;
+      var tagVerInfoMinorOpen := Pos('<VerInfo_MinorVer>', sl[I]);
+      if tagVerInfoMinorOpen > 0 then
+      begin
+        sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [13]);
+        Inc(countVerInfoMinor);
+      end;
+      var tagVerInfoReleaseOpen := Pos('<VerInfo_Release>', sl[I]);
+      if tagVerInfoReleaseOpen > 0 then
+      begin
+        sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [2]);
+        Inc(countVerInfoRelease);
+      end;
+      var tagVerInfoBuildOpen := Pos('<VerInfo_Build>', sl[I]);
+      if tagVerInfoBuildOpen > 0 then
+      begin
+        sl[I] := Copy(sl[I], 1, tagVerInfoBuildOpen - 1) + Format('<VerInfo_Build>%d</VerInfo_Build>', [fBuildRevision]);
+        Inc(countVerInfoBuild);
+      end;
+
+      var tagVerInfoKeysOpen := Pos('<VerInfo_Keys>', sl[I]);
+      if tagVerInfoKeysOpen > 0 then
+      begin
+        var tagFileVersionOpen := Pos('FileVersion=', sl[I]);
+        var tagFileVersionClose := Pos(';', sl[I], tagFileVersionOpen);
+
+        sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [0, 13, 2, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
+        Inc(countFileVersion);
+
+        var tagProductVersionOpen := Pos('ProductVersion=', sl[I]);
+        var tagProductVersionClose := Pos(';', sl[I], tagProductVersionOpen);
+
+        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d.%d', [0, 13, 2]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
+        Inc(countProductVersion);
+      end;
+    end;
+
+    // We save updated DPROJ even if it is malformed - since it is under VCS it will be trivial to inspect and revert
+    sl.SaveToFile('.\KnightsProvince.dproj');
+  finally
+    sl.Free;
+  end;
+
+  // We expect every tag to be present exactly once
+  if countVerInfoMajor <> 1 then   raise Exception.Create('VerInfo_Major encountered not once');
+  if countVerInfoMinor <> 1 then   raise Exception.Create('VerInfo_Minor encountered not once');
+  if countVerInfoRelease <> 1 then raise Exception.Create('VerInfo_Release encountered not once');
+  if countVerInfoBuild <> 1 then   raise Exception.Create('VerInfo_Build encountered not once');
+  if countFileVersion <> 1 then    raise Exception.Create('FileVersion encountered not once');
+  if countProductVersion <> 1 then raise Exception.Create('ProductVersion encountered not once');
 end;
 
 
