@@ -9,8 +9,13 @@ type
   TKMBuilderKP = class(TKMBuilder)
   private
     fGameName: string;
-    fGameVersion: string;
     fGameBuildFlags: string;
+
+    fBuildName: string;
+    fBuildMajor: Integer;
+    fBuildMinor: Integer;
+    fBuildRelease: Integer;
+    fBuildRevision: Integer;
 
     fMapsRepoPath: string;
 
@@ -20,7 +25,6 @@ type
     f7zipPath: string;
     fInnoSetupPath: string;
 
-    fBuildRevision: Integer;
     fBuildFolder: string;
     fBuildResult7zip: string;
     fBuildResultInstaller: string;
@@ -66,7 +70,12 @@ begin
 
   // Builder constants
   fGameName := 'Knights Province';
-  fGameVersion := 'Alpha 13.2';
+
+  fBuildName := 'Alpha';
+  fBuildMajor := 0;
+  fBuildMinor := 13;
+  fBuildRelease := 2;
+  fBuildRevision := -1; // Calculated automatically
 
   // Component paths (will be moved into INI or XML settings)
   fMapsRepoPath := '..\knights_province.public.git\';
@@ -79,7 +88,6 @@ begin
   fInnoSetupPath := 'C:\Program Files (x86)\Inno Setup 6\iscc.exe';
 
   // Build information
-  fBuildRevision := -1;
   fBuildFolder := '<no folder>';
   fBuildResult7zip := '<no filename>';
   fBuildResultInstaller := '<no filename>';
@@ -144,8 +152,8 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:      %s', [fGameName]));
-  sb.AppendLine(Format('Game version:   %s', [fGameVersion]));
+  sb.AppendLine(Format('Game name:      %s %s', [fGameName, fBuildName]));
+  sb.AppendLine(Format('Build:          %d.%d.%d.%d', [fBuildMajor, fBuildMinor, fBuildRelease, fBuildRevision]));
   sb.AppendLine(Format('Build flags:    %s', [fGameBuildFlags]));
 
   // Component paths
@@ -160,9 +168,8 @@ begin
   sb.AppendLine(Format('7-zip:          %s', [f7zipPath]));
   sb.AppendLine(Format('Inno Setup:     %s', [fInnoSetupPath]));
 
-  // Properties
+  // Results
   sb.AppendLine('');
-  sb.AppendLine(Format('Revision:       r%d', [fBuildRevision]));
   sb.AppendLine(Format('Folder:         %s', [fBuildFolder]));
   sb.AppendLine(Format('7-zip package:  %s', [fBuildResult7zip]));
   sb.AppendLine(Format('Installer:      %s', [fBuildResultInstaller]));
@@ -205,8 +212,9 @@ begin
 
   if CheckTerminated then Exit;
 
-  var dtNow := Now;
-  fBuildFolder := Format('kp%.4d-%.2d-%.2d (%s r%d)\', [YearOf(dtNow), MonthOf(dtNow), DayOf(dtNow), fGameVersion, fBuildRevision]);
+  //todo: BuildFolder should be parsable by Launcher
+  // E.g.: "Knights Province Alpha 13.2.17800"
+  fBuildFolder := Format('Knights Province %s %d.%d.%d\', [fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
   fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + ' Installer.exe';
 end;
@@ -214,6 +222,10 @@ end;
 
 procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
 begin
+  // E.g.: Alpha 13.2
+  var buildName := Format('%s %d.%d', [fBuildName, fBuildMinor, fBuildRelease]);
+
+
   // There is a number of locations that have game version:
   //  - KM_Const
   begin
@@ -224,7 +236,7 @@ begin
       if Pos('GAME_VERSION', pasLine) > 0 then
       begin
         gameVersionConstFound := True;
-        if Pos(fGameVersion, pasLine) = 0 then
+        if Pos(buildName, pasLine) = 0 then
           raise Exception.Create(Format('Game version in file - "%s"', [Trim(pasLine)]));
         Break;
       end;
@@ -245,7 +257,7 @@ begin
     var sr := TStreamReader.Create('.\Win32\readme_eng.html', TEncoding.ANSI);
     repeat
       var htmlLine := sr.ReadLine;
-      if Pos(fGameVersion, htmlLine) > 0 then
+      if Pos(buildName, htmlLine) > 0 then
       begin
         gameVersionFound := True;
         Break;
@@ -263,20 +275,16 @@ begin
 
   //  - Changelog
   begin
-    var gameVersionMajor := fGameVersion;
-    var dotPos := Pos('.', gameVersionMajor);
-    if dotPos > 0 then
-      gameVersionMajor := Copy(gameVersionMajor, 1, dotPos - 1);
-
-    // We have changelogs only after major versions. Minor versions get included into them
-    var changelogFilename := Format('.\Changelog %s.txt', [gameVersionMajor]);
+    // We have changelogs only after Minor versions. Release versions get included into them
+    // Changelog Alpha 13.txt
+    var changelogFilename := Format('.\Changelog %s %d.txt', [fBuildName, fBuildMinor]);
     CheckFileExists('Changelog', changelogFilename);
 
     var gameVersionFound := False;
     var sr := TStreamReader.Create(changelogFilename);
     repeat
       var txtLine := sr.ReadLine;
-      if Pos(fGameVersion, txtLine) > 0 then
+      if Pos(buildName, txtLine) > 0 then
       begin
         gameVersionFound := True;
         Break;
@@ -294,9 +302,9 @@ end;
 
 procedure TKMBuilderKP.Step03_WriteVersion(aConfig: TKMBuildConfiguration);
 begin
-  // Write revision number for the game exe and launcher/updater
+  // Write revision number for the game exe and Launcher/Updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
-  TFile.WriteAllText('.\version', fGameVersion + ' r' + IntToStr(fBuildRevision));
+  TFile.WriteAllText('.\version', Format('%s %d.%d r%d', [fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]));
 
   var countVerInfoMajor := 0;
   var countVerInfoMinor := 0;
@@ -313,19 +321,19 @@ begin
       var tagVerInfoMajorOpen := Pos('<VerInfo_MajorVer>', sl[I]);
       if tagVerInfoMajorOpen > 0 then
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [0]);
+        sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [fBuildMajor]);
         Inc(countVerInfoMajor);
       end;
       var tagVerInfoMinorOpen := Pos('<VerInfo_MinorVer>', sl[I]);
       if tagVerInfoMinorOpen > 0 then
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [13]);
+        sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [fBuildMinor]);
         Inc(countVerInfoMinor);
       end;
       var tagVerInfoReleaseOpen := Pos('<VerInfo_Release>', sl[I]);
       if tagVerInfoReleaseOpen > 0 then
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [2]);
+        sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [fBuildRelease]);
         Inc(countVerInfoRelease);
       end;
       var tagVerInfoBuildOpen := Pos('<VerInfo_Build>', sl[I]);
@@ -341,13 +349,13 @@ begin
         var tagFileVersionOpen := Pos('FileVersion=', sl[I]);
         var tagFileVersionClose := Pos(';', sl[I], tagFileVersionOpen);
 
-        sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [0, 13, 2, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
+        sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [fBuildMajor, fBuildMinor, fBuildRelease, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
         Inc(countFileVersion);
 
         var tagProductVersionOpen := Pos('ProductVersion=', sl[I]);
         var tagProductVersionClose := Pos(';', sl[I], tagProductVersionOpen);
 
-        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [0, 13, 2]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
+        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [fBuildMajor, fBuildMinor, fBuildRelease]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
         Inc(countProductVersion);
       end;
     end;
@@ -590,7 +598,9 @@ end;
 
 procedure TKMBuilderKP.Step12_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
-  var appName := Format('%s (%s r%d)', [fGameName, fGameVersion, fBuildRevision]);
+  // old - Knights Province (Alpha 13.2 r17800)
+  // new - Knights Province Alpha 13.2.17800
+  var appName := Format('%s %s %d.%d.%d)', [fGameName, fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]);
 
   // Delete old installer if we had it for some reason
   DeleteFileIfExists(fBuildResultInstaller);
@@ -633,7 +643,9 @@ begin
   CheckFileExists('Launcher', launcherFilename);
   CheckFileExists('7-zip package', result7zipFilename);
 
-  // Example: .\Launcher.exe ".\kp2025-10-29 (Alpha 13 wip r17455).7z"
+  // Example:
+  // old - .\Launcher.exe ".\kp2025-10-29 (Alpha 13 wip r17455).7z"
+  // new - .\Launcher.exe ".\Knights Province Alpha 13.2.17455.7z"
   var cmdPatch := Format('%s "%s"', [launcherFilename, result7zipFilename]);
   CreateProcessSimple(cmdPatch, False, True, False);
 end;
@@ -644,8 +656,10 @@ begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
 
-  // Example: ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
-  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, fBuildFolder, 13, fBuildRevision]);
+  // Example:
+  // old - ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
+  // new - ".\KT_Admin.exe" register "Knights Province Alpha 13.2.17800" 13 17800
+  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, fBuildFolder, fBuildMinor, fBuildRevision]);
   CreateProcessSimple(cmdKtAdmin, True, True, False);
 end;
 
