@@ -212,7 +212,6 @@ begin
 
   if CheckTerminated then Exit;
 
-  //todo: BuildFolder should be parsable by Launcher
   // E.g.: "Knights Province Alpha 13.2.17800"
   fBuildFolder := Format('Knights Province %s %d.%d.%d\', [fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
