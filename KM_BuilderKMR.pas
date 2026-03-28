@@ -30,17 +30,18 @@ type
     procedure Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
     procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
     procedure Step02_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
-    procedure Step03_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
-    procedure Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
+    procedure Step03_WriteVersion(aConfig: TKMBuildConfiguration);
+    procedure Step04_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
+    procedure Step05_DeleteTempFiles(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: Update scripting code and wiki
-    procedure Step05_GenerateDocs(aConfig: TKMBuildConfiguration);
-    procedure Step06_CopyPrePack(aConfig: TKMBuildConfiguration);
-    procedure Step07_RxxPack(aConfig: TKMBuildConfiguration);
-    procedure Step08_BuildGameExe(aConfig: TKMBuildConfiguration);
-    procedure Step09_PatchGameExe(aConfig: TKMBuildConfiguration);
-    procedure Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
-    procedure Step11_PackInstaller(aConfig: TKMBuildConfiguration);
-    procedure Step12_CommitAndTag(aConfig: TKMBuildConfiguration);
+    procedure Step06_GenerateDocs(aConfig: TKMBuildConfiguration);
+    procedure Step07_CopyPrePack(aConfig: TKMBuildConfiguration);
+    procedure Step08_RxxPack(aConfig: TKMBuildConfiguration);
+    procedure Step09_BuildGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step10_PatchGameExe(aConfig: TKMBuildConfiguration);
+    procedure Step11_ArrangeFolder(aConfig: TKMBuildConfiguration);
+    procedure Step12_PackInstaller(aConfig: TKMBuildConfiguration);
+    procedure Step13_CommitAndTag(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
@@ -89,23 +90,24 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Update repositories',   Step00_UpdateRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step02_ScanForDebugFlags));
-  fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step03_CopyNetAuthSecure));
-  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step04_DeleteTempFiles));
-  fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step05_GenerateDocs));
-  fBuildSteps.Add(TKMBuildStep.New('Copy pre-pack',         Step06_CopyPrePack));
-  fBuildSteps.Add(TKMBuildStep.New('RXX pack',              Step07_RxxPack));
-  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step08_BuildGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step09_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step10_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step11_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step12_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Write version',         Step03_WriteVersion));
+  fBuildSteps.Add(TKMBuildStep.New('Copy NetAuthSecure',    Step04_CopyNetAuthSecure));
+  fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step05_DeleteTempFiles));
+  fBuildSteps.Add(TKMBuildStep.New('Generate docs',         Step06_GenerateDocs));
+  fBuildSteps.Add(TKMBuildStep.New('Copy pre-pack',         Step07_CopyPrePack));
+  fBuildSteps.Add(TKMBuildStep.New('RXX pack',              Step08_RxxPack));
+  fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step09_BuildGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step10_PatchGameExe));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step11_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step12_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step13_CommitAndTag));
 
   // Scenarios
   // Beta build with lots of debug features enabled
-  fBuildScenarios.Add(TKMBuildScenario.Create('Debug (installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11   ]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Debug (installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11,12   ]));
 
   // Public release version, without any extra slowdowns like DBG_DBG_RNG_SPY or alike
-  fBuildScenarios.Add(TKMBuildScenario.Create('Release (installer)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Release (installer)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13]));
 end;
 
 
@@ -221,49 +223,6 @@ begin
   fBuildRevision := StrToInt(Trim(res)) + 1;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
-  if CheckTerminated then Exit;
-
-  // Write revision number for the game exe
-  TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM = ' + IntToStr(fBuildRevision));
-
-  // Write a revision number and a build date into Changelog.txt
-  begin
-    var sl := TStringList.Create;
-    sl.LoadFromFile('.\Changelog.txt');
-
-    var placeholderFound := False;
-    for var I := 0 to sl.Count - 1 do
-    begin
-      var placeholder := Pos('r_____ []', sl[I]);
-      if placeholder > 0 then
-      begin
-        placeholderFound := True;
-
-        if (I + 2 >= sl.Count - 1) or (sl[I + 1] = '') or (sl[I + 2] = '') then
-          raise Exception.Create('Version placeholder in Changelog.txt must be followed by a separator line and at least one entry');
-
-        // We dont trust system function for date formatting, they fallback to native OS format
-        var buildYear := YearOf(Now);
-        var buildMonth := MonthOf(Now);
-        var buildDay := DayOf(Now);
-        var verString := LeftStr(sl[I], placeholder - 2) + Format(' r%d [%4d.%.2d.%.2d]', [fBuildRevision, buildYear, buildMonth, buildDay]);
-
-        // Insert below, (so that we keep the placeholder for the next version above)
-        sl.Insert(I + 1, DupeString('-', 30));
-        sl.Insert(I + 2, '');
-        sl.Insert(I + 3, '');
-        sl.Insert(I + 4, verString);
-        Break;
-      end;
-    end;
-
-    if not placeholderFound then
-      raise Exception.Create('Version placeholder could not be found in the Changelog.txt');
-
-    sl.SaveToFile('.\Changelog.txt');
-    sl.Free;
-  end;
-
   fBuildFolder := Format('%s %s r%d\', [fGameName, fGameVersion, fBuildRevision]);
   fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + '.exe';
 end;
@@ -305,7 +264,52 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step03_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step03_WriteVersion(aConfig: TKMBuildConfiguration);
+begin
+  // Write revision number for the game exe
+  TFile.WriteAllText('.\KM_Revision.inc', 'GAME_REVISION_NUM = ' + IntToStr(fBuildRevision));
+
+  // Write a revision number and a build date into Changelog.txt
+  begin
+    var sl := TStringList.Create;
+    sl.LoadFromFile('.\Changelog.txt');
+
+    var placeholderFound := False;
+    for var I := 0 to sl.Count - 1 do
+    begin
+      var placeholder := Pos('r_____ []', sl[I]);
+      if placeholder > 0 then
+      begin
+        placeholderFound := True;
+
+        if (I + 2 >= sl.Count - 1) or (sl[I + 1] = '') or (sl[I + 2] = '') then
+          raise Exception.Create('Version placeholder in Changelog.txt must be followed by a separator line and at least one entry');
+
+        // We dont trust system function for date formatting, they fallback to native OS format
+        var buildYear := YearOf(Now);
+        var buildMonth := MonthOf(Now);
+        var buildDay := DayOf(Now);
+        var verString := LeftStr(sl[I], placeholder - 2) + Format(' r%d [%4d.%.2d.%.2d]', [fBuildRevision, buildYear, buildMonth, buildDay]);
+
+        // Insert below, (so that we keep the placeholder for the next version above)
+        sl.Insert(I + 1, DupeString('-', 30));
+        sl.Insert(I + 2, '');
+        sl.Insert(I + 3, '');
+        sl.Insert(I + 4, verString);
+        Break;
+      end;
+    end;
+
+    if not placeholderFound then
+      raise Exception.Create('Version placeholder could not be found in the Changelog.txt');
+
+    sl.SaveToFile('.\Changelog.txt');
+    sl.Free;
+  end;
+end;
+
+
+procedure TKMBuilderKMR.Step04_CopyNetAuthSecure(aConfig: TKMBuildConfiguration);
 begin
   var nsaSource := fPrivateRepoPath + 'src\net\KM_NetAuthSecure.pas';
   var nsaDest := '.\src\net\KM_NetAuthSecure.pas';
@@ -318,7 +322,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step04_DeleteTempFiles(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step05_DeleteTempFiles(aConfig: TKMBuildConfiguration);
 begin
   // Delete folders
   fOnLog('Deleting temp folders ..');
@@ -340,7 +344,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step05_GenerateDocs(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step06_GenerateDocs(aConfig: TKMBuildConfiguration);
 const
   LANG: array [0..3] of string = ('eng', 'ger', 'pol', 'rus');
 begin
@@ -358,7 +362,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step06_CopyPrePack(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step07_CopyPrePack(aConfig: TKMBuildConfiguration);
 begin
   // Copy palettes and fonts
   CheckFolderExists('Data GFX', fPrivateRepoPath + 'data\gfx\');
@@ -379,7 +383,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step07_RxxPack(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step08_RxxPack(aConfig: TKMBuildConfiguration);
 begin
   // The tool is thought to be quite reliable, hence we opt for "Release" build, so that it works faster
   BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, '.\Utils\RXXPacker\RXXPacker.exe');
@@ -407,7 +411,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step08_BuildGameExe(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step09_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
   BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', aConfig, 'KaM_Remake.exe');
 
@@ -446,7 +450,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step09_PatchGameExe(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step10_PatchGameExe(aConfig: TKMBuildConfiguration);
 begin
   var exeSizeBefore := TFile.GetSize('KaM_Remake.exe');
   fOnLog(Format('Size before patch - %d bytes', [exeSizeBefore]));
@@ -471,7 +475,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step11_ArrangeFolder(aConfig: TKMBuildConfiguration);
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -543,7 +547,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step11_PackInstaller(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step12_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('Installer secret', fPrivateRepoPath + 'Installer\CheckKaM.iss');
 
@@ -577,7 +581,7 @@ begin
 end;
 
 
-procedure TKMBuilderKMR.Step12_CommitAndTag(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKMR.Step13_CommitAndTag(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);

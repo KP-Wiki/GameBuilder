@@ -32,8 +32,8 @@ type
     procedure Step00_UpdateRepositories(aConfig: TKMBuildConfiguration);
     procedure Step01_Initialize(aConfig: TKMBuildConfiguration);
     procedure Step02_CheckVersion(aConfig: TKMBuildConfiguration);
-    procedure Step03_WriteVersion(aConfig: TKMBuildConfiguration);
-    procedure Step04_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+    procedure Step03_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+    procedure Step04_WriteVersion(aConfig: TKMBuildConfiguration);
     procedure Step05_DeleteTempFiles(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: Update scripting code and wiki
     procedure Step06_BuildGameExe(aConfig: TKMBuildConfiguration);
@@ -96,8 +96,8 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Update repositories',   Step00_UpdateRepositories));
   fBuildSteps.Add(TKMBuildStep.New('Initialize',            Step01_Initialize));
   fBuildSteps.Add(TKMBuildStep.New('Check version',         Step02_CheckVersion));
-  fBuildSteps.Add(TKMBuildStep.New('Write version',         Step03_WriteVersion));
-  fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step04_ScanForDebugFlags));
+  fBuildSteps.Add(TKMBuildStep.New('Scan for debug flags',  Step03_ScanForDebugFlags));
+  fBuildSteps.Add(TKMBuildStep.New('Write version',         Step04_WriteVersion));
   fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step05_DeleteTempFiles));
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step06_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step07_PatchGameExe));
@@ -210,8 +210,6 @@ begin
   fBuildRevision := StrToInt(Trim(res)) - 8500;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
-  if CheckTerminated then Exit;
-
   // E.g.: "Knights Province Alpha 13.2.17800"
   fBuildFolder := Format('Knights Province %s %d.%d.%d\', [fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
@@ -299,7 +297,43 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step03_WriteVersion(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step03_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
+begin
+  // DEFINEs:
+  // - DEBUG
+  // - DBG_SKIP_SECURE_AUTH
+  // - DBG_PERFLOG
+  // - DBG_DBG_RNG_SPY
+  // KM_Defaults:
+  // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
+
+  fGameBuildFlags := '';
+
+  // Scan game code for debug flags (ignore Utils for now)
+  var pasFilesScanned: Integer;
+  ScanForDebugFlagsInPas('.\src\',
+    procedure (aFlag: TKMDebugScan)
+    begin
+      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
+    end,
+    pasFilesScanned);
+  fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
+
+  // Scan game code for debug flags (ignore Utils for now)
+  var incFilesScanned: Integer;
+  ScanForDebugFlagsInInc('.\src\',
+    procedure (aFlag: TKMDebugScan)
+    begin
+      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
+    end,
+    incFilesScanned);
+  fOnLog(Format('Scanned %d inc files', [incFilesScanned]));
+end;
+
+
+procedure TKMBuilderKP.Step04_WriteVersion(aConfig: TKMBuildConfiguration);
 begin
   // Write revision number for the game exe and Launcher/Updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
@@ -372,42 +406,6 @@ begin
   if countVerInfoBuild <> 1 then   raise Exception.Create('VerInfo_Build encountered not once');
   if countFileVersion <> 1 then    raise Exception.Create('FileVersion encountered not once');
   if countProductVersion <> 1 then raise Exception.Create('ProductVersion encountered not once');
-end;
-
-
-procedure TKMBuilderKP.Step04_ScanForDebugFlags(aConfig: TKMBuildConfiguration);
-begin
-  // DEFINEs:
-  // - DEBUG
-  // - DBG_SKIP_SECURE_AUTH
-  // - DBG_PERFLOG
-  // - DBG_DBG_RNG_SPY
-  // KM_Defaults:
-  // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
-
-  fGameBuildFlags := '';
-
-  // Scan game code for debug flags (ignore Utils for now)
-  var pasFilesScanned: Integer;
-  ScanForDebugFlagsInPas('.\src\',
-    procedure (aFlag: TKMDebugScan)
-    begin
-      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
-    end,
-    pasFilesScanned);
-  fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
-
-  // Scan game code for debug flags (ignore Utils for now)
-  var incFilesScanned: Integer;
-  ScanForDebugFlagsInInc('.\src\',
-    procedure (aFlag: TKMDebugScan)
-    begin
-      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
-    end,
-    incFilesScanned);
-  fOnLog(Format('Scanned %d inc files', [incFilesScanned]));
 end;
 
 
