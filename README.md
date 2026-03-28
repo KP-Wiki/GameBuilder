@@ -1,2 +1,2 @@
 # GameBuilder
-Game builder tool suited for Knights Province (and potentially KaM Remake)
+Game builder tool tailored for KaM Remake and Knights Province (and potentially other Delphi games).
