@@ -47,13 +47,15 @@ begin
 
     sl.LoadFromFile(fname);
 
-    // Check for uncommented DBG*** = True
+    // Check for the code along the lines of DBG*** = True
     // Positive:
     //   Dbg ... True
-    //   Dbg ... True //
-    // Negative
-    //   Dbg ... //True
-    //   //Dbg ... True
+    //   Dbg ... True .. //
+    //   Dbg ... True .. }
+    // Negative:
+    //   Dbg ... // .. True
+    //   // .. Dbg ... True
+    //   Dbg ... then .. True
     //   function KaMRandom(aMax: Int64{$IFDEF DBG_RNG_SPY}; const aCaller: AnsiString; aLogRng: Boolean = True{$ENDIF}): Int64;
     for var K := 0 to sl.Count - 1 do
     begin
@@ -64,8 +66,10 @@ begin
       begin
         var posComment := Pos('//', LowerCase(strLine));
         var posBracket := Pos('}', LowerCase(strLine), posDebugFlag);
+        var posThen := Pos(' then ', LowerCase(strLine), posDebugFlag);
         if ((posComment = 0) or (posComment > posTrue))
-        and ((posBracket = 0) or (posBracket > posTrue)) then
+        and ((posBracket = 0) or (posBracket > posTrue))
+        and ((posThen = 0) or (posThen > posTrue)) then
         begin
           // Try to find the var/const end
           var posSpace := Pos(' ', strLine, posDebugFlag);
