@@ -234,14 +234,14 @@ begin
       begin
         gameVersionConstFound := True;
         if Pos(buildName, pasLine) = 0 then
-          raise Exception.Create(Format('Game version in file - "%s"', [Trim(pasLine)]));
+          raise Exception.CreateFmt('Game version in file - "%s"', [Trim(pasLine)]);
         Break;
       end;
     until sr.EndOfStream;
     sr.Free;
 
     if not gameVersionConstFound then
-      raise Exception.Create(Format('Game version const not found in "%s"', ['.\src\KM_Const.pas']));
+      raise Exception.CreateFmt('Game version const not found in "%s"', ['.\src\KM_Const.pas']);
 
     fOnLog(Format('Game version in "%s" - ok', ['.\src\KM_Const.pas']));
   end;
@@ -263,7 +263,7 @@ begin
     sr.Free;
 
     if not gameVersionFound then
-      raise Exception.Create(Format('Game version const not found in "%s"', ['.\Win32\readme_eng.html']));
+      raise Exception.CreateFmt('Game version const not found in "%s"', ['.\Win32\readme_eng.html']);
 
     fOnLog(Format('Game version in "%s" - ok', ['.\Win32\readme_eng.html']));
   end;
@@ -290,7 +290,7 @@ begin
     sr.Free;
 
     if not gameVersionFound then
-      raise Exception.Create(Format('Game version const not found in "%s"', [changelogFilename]));
+      raise Exception.CreateFmt('Game version const not found in "%s"', [changelogFilename]);
 
     fOnLog(Format('Game version in "%s" - ok', [changelogFilename]));
   end;

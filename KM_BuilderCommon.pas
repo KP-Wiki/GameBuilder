@@ -137,7 +137,7 @@ procedure TKMBuilder.CheckFileExists(const aAppName, aFilename: string);
 begin
   // Check that file is available at given path
   if not FileExists(aFilename) then
-    raise Exception.Create(Format('%s not found at "%s"', [aAppName, aFilename]));
+    raise Exception.CreateFmt('%s not found at "%s"', [aAppName, aFilename]);
 end;
 
 
@@ -150,7 +150,7 @@ begin
   stream.LoadFromFile(aFilename);
   actualCRC := Adler32CRC(stream);
   if actualCRC <> aExpectedCRC then
-    raise Exception.Create(Format('CRC does not match for "%s". Expected %8x, actual %8x', [aFilename, aExpectedCRC, actualCRC]));
+    raise Exception.CreateFmt('CRC does not match for "%s". Expected %8x, actual %8x', [aFilename, aExpectedCRC, actualCRC]);
   stream.Free;
 end;
 
@@ -159,7 +159,7 @@ procedure TKMBuilder.CheckFolderExists(const aTitle, aFolder: string);
 begin
   // Check that folder is available at given path
   if not DirectoryExists(aFolder) then
-    raise Exception.Create(Format('%s not found at "%s"', [aTitle, aFolder]));
+    raise Exception.CreateFmt('%s not found at "%s"', [aTitle, aFolder]);
 end;
 
 
@@ -234,7 +234,7 @@ begin
     fOnLog('Deleting ' + aFilename);
 
     if not DeleteFile(aFilename) then
-      raise Exception.Create(Format('Failed to delete "%s". Is it locked by something?', [aFilename]));
+      raise Exception.CreateFmt('Failed to delete "%s". Is it locked by something?', [aFilename]);
   end;
 end;
 
