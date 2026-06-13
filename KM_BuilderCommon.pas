@@ -71,8 +71,8 @@ type
     procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
 
-    procedure BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; aPlatform: TKMBuildPlatform; const aExe: string);
-    procedure BuildWinGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
+    procedure BuildDelphi(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; aPlatform: TKMBuildPlatform; const aExe: string);
+    procedure BuildDelphiGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
@@ -301,7 +301,7 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; aPlatform: TKMBuildPlatform; const aExe: string);
+procedure TKMBuilder.BuildDelphi(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; aPlatform: TKMBuildPlatform; const aExe: string);
 begin
   DeleteFileIfExists(aExe);
   CheckFileExists('RSVars', aRSVars);
@@ -320,7 +320,7 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWinGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
+procedure TKMBuilder.BuildDelphiGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('RSVars', aRSVars);
 

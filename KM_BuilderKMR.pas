@@ -119,7 +119,7 @@ begin
       try
         fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
 
-        BuildWinGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj', aConfig);
+        BuildDelphiGroup(fDelphiRSVarsPath, 'KaMProjectGroup.groupproj', aConfig);
 
         fOnDone;
       except
@@ -386,7 +386,7 @@ end;
 procedure TKMBuilderKMR.Step08_RxxPack(aConfig: TKMBuildConfiguration);
 begin
   // The tool is thought to be quite reliable, hence we opt for "Release" build, so that it works faster
-  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, bpWin32, '.\Utils\RXXPacker\RXXPacker.exe');
+  BuildDelphi(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, bpWin32, '.\Utils\RXXPacker\RXXPacker.exe');
 
   if CheckTerminated then Exit;
 
@@ -413,32 +413,32 @@ end;
 
 procedure TKMBuilderKMR.Step09_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
-  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', aConfig, bpWin32, 'KaM_Remake.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'KaM_Remake.dproj', aConfig, bpWin32, 'KaM_Remake.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', aConfig, bpWin32, 'Utils\Campaign builder\CampaignBuilder.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', aConfig, bpWin32, 'Utils\Campaign builder\CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', aConfig, bpWin32, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', aConfig, bpWin32, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', aConfig, bpWin32, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', aConfig, bpWin32, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', aConfig, bpWin32, 'Utils\ScriptValidator\ScriptValidator.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', aConfig, bpWin32, 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
   //todo -cBuilder: Add ScriptingEditor as submodule
-  //BuildWin(fDelphiRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe');
+  //BuildDelphi(fDelphiRSVarsPath, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.dproj', aConfig, bpWin32, 'Utils\ScriptingEditor (from kp-wiki)\ScriptingEditor.exe');
 
   if CheckTerminated then Exit;
 

@@ -127,7 +127,7 @@ begin
       try
         fOnLog(Format('Starting builder thread %d', [TThread.CurrentThread.ThreadID]));
 
-        BuildWinGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj', aConfig);
+        BuildDelphiGroup(fDelphiRSVarsPath, 'KP_ProjectGroup.groupproj', aConfig);
 
         if CheckTerminated then Exit;
 
@@ -427,19 +427,19 @@ end;
 
 procedure TKMBuilderKP.Step06_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
-  BuildWin(fDelphiRSVarsPath, 'KnightsProvince.dproj', aConfig, bpWin32, 'KnightsProvince.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'KnightsProvince.dproj', aConfig, bpWin32, 'KnightsProvince.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', aConfig, bpWin32, 'ScriptValidator.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'utils\ScriptValidator\ScriptValidator.dproj', aConfig, bpWin32, 'ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', aConfig, bpWin32, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', aConfig, bpWin32, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
@@ -451,12 +451,12 @@ begin
 
 //  if CheckTerminated then Exit;
 
-//  BuildWin(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpWin32, 'MinimapGenerator.exe');
+//  BuildDelphi(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpWin32, 'MinimapGenerator.exe');
 
   if CheckTerminated then Exit;
 
   // This is a test. Will need to skip if target is not available
-  BuildWin(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpLinux64, 'MinimapGenerator');
+  BuildDelphi(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpLinux64, 'MinimapGenerator');
 end;
 
 
@@ -513,7 +513,7 @@ end;
 procedure TKMBuilderKP.Step09_RunTests(aConfig: TKMBuildConfiguration);
 begin
   // Unit tests
-  BuildWin(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, bpWin32, 'TestingUnitTests.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, bpWin32, 'TestingUnitTests.exe');
 
   var cmdUnitTests := '.\TestingUnitTests.exe -test';
   var resUnitTests := CaptureConsoleOutput('.\', cmdUnitTests);
@@ -523,7 +523,7 @@ begin
     raise Exception.Create('Unit tests did not succeed');
 
   // Game tests
-  BuildWin(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', bcRelease, bpWin32, 'TestingGameTests.exe');
+  BuildDelphi(fDelphiRSVarsPath, 'utils\TestingGameTests\TestingGameTests.dproj', bcRelease, bpWin32, 'TestingGameTests.exe');
 
   var cmdGameTests := '.\TestingGameTests.exe -test';
   var resGameTests := CaptureConsoleOutput('.\', cmdGameTests);
