@@ -386,7 +386,7 @@ end;
 procedure TKMBuilderKMR.Step08_RxxPack(aConfig: TKMBuildConfiguration);
 begin
   // The tool is thought to be quite reliable, hence we opt for "Release" build, so that it works faster
-  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, '.\Utils\RXXPacker\RXXPacker.exe');
+  BuildWin(fDelphiRSVarsPath, '.\Utils\RXXPacker\RXXPacker.dproj', bcRelease, bpWin32, '.\Utils\RXXPacker\RXXPacker.exe');
 
   if CheckTerminated then Exit;
 
@@ -413,27 +413,27 @@ end;
 
 procedure TKMBuilderKMR.Step09_BuildGameExe(aConfig: TKMBuildConfiguration);
 begin
-  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', aConfig, 'KaM_Remake.exe');
+  BuildWin(fDelphiRSVarsPath, 'KaM_Remake.dproj', aConfig, bpWin32, 'KaM_Remake.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', aConfig, 'Utils\Campaign builder\CampaignBuilder.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\Campaign builder\CampaignBuilder.dproj', aConfig, bpWin32, 'Utils\Campaign builder\CampaignBuilder.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', aConfig, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServer\KaM_DedicatedServer.dproj', aConfig, bpWin32, 'Utils\DedicatedServer\KaM_DedicatedServer.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', aConfig, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.dproj', aConfig, bpWin32, 'Utils\DedicatedServerGUI\KaM_DedicatedServerGUI.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', aConfig, 'Utils\ScriptValidator\ScriptValidator.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\ScriptValidator\ScriptValidator.dproj', aConfig, bpWin32, 'Utils\ScriptValidator\ScriptValidator.exe');
 
   if CheckTerminated then Exit;
 
-  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  BuildWin(fDelphiRSVarsPath, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'Utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
   if CheckTerminated then Exit;
 

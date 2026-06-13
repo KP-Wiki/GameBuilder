@@ -11,8 +11,15 @@ type
     bcRelease
   );
 
+  TKMBuildPlatform = (
+    bpUndefined, // Default uninitialized value
+    bpWin32,
+    bpLinux64
+  );
+
 const
   BUILD_CONFIG_NAME: array [TKMBuildConfiguration] of string = ('Undefined', 'Debug', 'Release');
+  BUILD_PLATFORM_NAME: array [TKMBuildPlatform] of string = ('Undefined', 'Win32', 'Linux64');
 
 type
   TKMBuilderClass = class of TKMBuilder;
@@ -64,7 +71,7 @@ type
     procedure CheckFolderExists(const aTitle, aFolder: string);
     function CheckTerminated: Boolean;
 
-    procedure BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; const aExe: string);
+    procedure BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; aPlatform: TKMBuildPlatform; const aExe: string);
     procedure BuildWinGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
@@ -294,7 +301,7 @@ begin
 end;
 
 
-procedure TKMBuilder.BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; const aExe: string);
+procedure TKMBuilder.BuildWin(const aRSVars, aProject: string; aConfig: TKMBuildConfiguration; aPlatform: TKMBuildPlatform; const aExe: string);
 begin
   DeleteFileIfExists(aExe);
   CheckFileExists('RSVars', aRSVars);
@@ -303,7 +310,8 @@ begin
 
   fOnLog(Format('Building %s (%s)', [aExe, BUILD_CONFIG_NAME[aConfig]]));
   begin
-    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=%s /t:Build /clp:ErrorsOnly /fl"', [aRSVars, aProject, BUILD_CONFIG_NAME[aConfig]]);
+    var s := Format('cmd.exe /C "CALL "%s" && MSBUILD "%s" /p:Config=%s /p:Platform=%s /t:Build /clp:ErrorsOnly /fl"',
+      [aRSVars, aProject, BUILD_CONFIG_NAME[aConfig], BUILD_PLATFORM_NAME[aPlatform]]);
     var s2 := CaptureConsoleOutput('.\', s);
     fOnLog(s2);
   end;
