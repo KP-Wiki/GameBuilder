@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Game Builder'
-  ClientHeight = 681
+  ClientHeight = 785
   ClientWidth = 1074
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     1074
-    681)
+    785)
   TextHeight = 15
   object Label1: TLabel
     Left = 312
@@ -45,16 +45,18 @@ object Form1: TForm1
   end
   object Label5: TLabel
     Left = 16
-    Top = 592
+    Top = 696
     Width = 34
     Height = 15
+    Anchors = [akLeft, akBottom]
     Caption = 'Utility:'
+    ExplicitTop = 592
   end
   object meLog: TMemo
     Left = 312
     Top = 344
     Width = 746
-    Height = 321
+    Height = 425
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -68,29 +70,35 @@ object Form1: TForm1
     ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 0
+    ExplicitWidth = 742
+    ExplicitHeight = 320
   end
   object btnStop: TButton
     Left = 16
-    Top = 640
+    Top = 744
     Width = 289
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
+    Anchors = [akLeft, akBottom]
     Caption = 'Stop'
     TabOrder = 1
     OnClick = btnStopClick
+    ExplicitTop = 640
   end
   object pnlBuildSteps: TPanel
     Left = 16
     Top = 168
     Width = 289
-    Height = 409
+    Height = 513
+    Anchors = [akLeft, akTop, akBottom]
     BevelOuter = bvNone
     Caption = '<Builder steps. Filled in dynamically>'
     Color = clMaroon
     TabOrder = 2
+    ExplicitHeight = 409
   end
   object pnlBuildScenarios: TPanel
     Left = 16
@@ -119,19 +127,22 @@ object Form1: TForm1
     ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 4
+    ExplicitWidth = 742
   end
   object btnBuildAllProjects: TButton
     Left = 16
-    Top = 608
+    Top = 712
     Width = 289
     Height = 25
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
     Margins.Bottom = 2
+    Anchors = [akLeft, akBottom]
     Caption = 'Build all projects'
     TabOrder = 5
     OnClick = btnBuildAllProjectsClick
+    ExplicitTop = 608
   end
   object rgBuildConfiguration: TRadioGroup
     Left = 8
