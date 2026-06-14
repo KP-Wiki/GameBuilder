@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Game Builder'
-  ClientHeight = 785
+  ClientHeight = 801
   ClientWidth = 1074
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     1074
-    785)
+    801)
   TextHeight = 15
   object Label1: TLabel
     Left = 312
@@ -38,14 +38,14 @@ object Form1: TForm1
   end
   object Label4: TLabel
     Left = 16
-    Top = 152
+    Top = 168
     Width = 31
     Height = 15
     Caption = 'Steps:'
   end
   object Label5: TLabel
     Left = 16
-    Top = 696
+    Top = 712
     Width = 34
     Height = 15
     Anchors = [akLeft, akBottom]
@@ -56,7 +56,7 @@ object Form1: TForm1
     Left = 312
     Top = 344
     Width = 746
-    Height = 425
+    Height = 441
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -75,7 +75,7 @@ object Form1: TForm1
   end
   object btnStop: TButton
     Left = 16
-    Top = 744
+    Top = 760
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -90,7 +90,7 @@ object Form1: TForm1
   end
   object pnlBuildSteps: TPanel
     Left = 16
-    Top = 168
+    Top = 184
     Width = 289
     Height = 513
     Anchors = [akLeft, akTop, akBottom]
@@ -98,13 +98,12 @@ object Form1: TForm1
     Caption = '<Builder steps. Filled in dynamically>'
     Color = clMaroon
     TabOrder = 2
-    ExplicitHeight = 409
   end
   object pnlBuildScenarios: TPanel
     Left = 16
     Top = 32
     Width = 289
-    Height = 65
+    Height = 81
     BevelOuter = bvNone
     Caption = '<Builder scenarios. Filled in dynamically>'
     TabOrder = 3
@@ -131,7 +130,7 @@ object Form1: TForm1
   end
   object btnBuildAllProjects: TButton
     Left = 16
-    Top = 712
+    Top = 728
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -146,7 +145,7 @@ object Form1: TForm1
   end
   object rgBuildConfiguration: TRadioGroup
     Left = 8
-    Top = 104
+    Top = 120
     Width = 193
     Height = 41
     Caption = ' Configuration '

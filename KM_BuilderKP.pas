@@ -38,14 +38,16 @@ type
     //todo -cBuilder: Update scripting code and wiki
     procedure Step06_BuildGameExe(aConfig: TKMBuildConfiguration);
     procedure Step07_PatchGameExe(aConfig: TKMBuildConfiguration);
-    procedure Step08_PackData(aConfig: TKMBuildConfiguration);
-    procedure Step09_RunTests(aConfig: TKMBuildConfiguration);
-    procedure Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
-    procedure Step11_Pack7zip(aConfig: TKMBuildConfiguration);
-    procedure Step12_PackInstaller(aConfig: TKMBuildConfiguration);
-    procedure Step13_CreatePatch(aConfig: TKMBuildConfiguration);
-    procedure Step14_RegisterOnKT(aConfig: TKMBuildConfiguration);
-    procedure Step15_CommitAndTag(aConfig: TKMBuildConfiguration);
+    procedure Step08_DedicatedServer(aConfig: TKMBuildConfiguration);
+    procedure Step09_MinimapGenerator(aConfig: TKMBuildConfiguration);
+    procedure Step10_PackData(aConfig: TKMBuildConfiguration);
+    procedure Step11_RunTests(aConfig: TKMBuildConfiguration);
+    procedure Step12_ArrangeFolder(aConfig: TKMBuildConfiguration);
+    procedure Step13_Pack7zip(aConfig: TKMBuildConfiguration);
+    procedure Step14_PackInstaller(aConfig: TKMBuildConfiguration);
+    procedure Step15_CreatePatch(aConfig: TKMBuildConfiguration);
+    procedure Step16_RegisterOnKT(aConfig: TKMBuildConfiguration);
+    procedure Step17_CommitAndTag(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: git Push wiki
   public
     constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
@@ -101,21 +103,27 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Delete temp files',     Step05_DeleteTempFiles));
   fBuildSteps.Add(TKMBuildStep.New('Build executables',     Step06_BuildGameExe));
   fBuildSteps.Add(TKMBuildStep.New('Patch game executable', Step07_PatchGameExe));
-  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step08_PackData));
-  fBuildSteps.Add(TKMBuildStep.New('Run tests',             Step09_RunTests));
-  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step10_ArrangeFolder));
-  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step11_Pack7zip));
-  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step12_PackInstaller));
-  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step13_CreatePatch));
-  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step14_RegisterOnKT));
-  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step15_CommitAndTag));
+  fBuildSteps.Add(TKMBuildStep.New('Dedicated Server',      Step08_DedicatedServer));
+  fBuildSteps.Add(TKMBuildStep.New('Minimap Generator',     Step09_MinimapGenerator));
+  fBuildSteps.Add(TKMBuildStep.New('Pack data',             Step10_PackData));
+  fBuildSteps.Add(TKMBuildStep.New('Run tests',             Step11_RunTests));
+  fBuildSteps.Add(TKMBuildStep.New('Arrange build folder',  Step12_ArrangeFolder));
+  fBuildSteps.Add(TKMBuildStep.New('Pack 7-zip',            Step13_Pack7zip));
+  fBuildSteps.Add(TKMBuildStep.New('Pack installer',        Step14_PackInstaller));
+  fBuildSteps.Add(TKMBuildStep.New('Create patch',          Step15_CreatePatch));
+  fBuildSteps.Add(TKMBuildStep.New('Register on KT',        Step16_RegisterOnKT));
+  fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step17_CommitAndTag));
 
   // Scenarios
+  // Full build for tools only
+  // We still want ot build the game to make sure it's not broken
+  fBuildScenarios.Add(TKMBuildScenario.Create('Full build, tools only',      bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11]));
+
   // Nightly build (same as Release, without Installer)
-  fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,   13,14,15]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,   15,16,17]));
 
   // Public release version
-  fBuildScenarios.Add(TKMBuildScenario.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Full build (7z + installer)', bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]));
 end;
 
 
@@ -437,26 +445,6 @@ begin
 
   BuildDelphi(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
 
-  if CheckTerminated then Exit;
-
-  BuildDelphi(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', aConfig, bpWin32, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
-
-  if CheckTerminated then Exit;
-
-  BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
-
-  if CheckTerminated then Exit;
-
-  BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
-
-//  if CheckTerminated then Exit;
-
-//  BuildDelphi(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpWin32, 'MinimapGenerator.exe');
-
-  if CheckTerminated then Exit;
-
-  // This is a test. Will need to skip if target is not available
-  BuildDelphi(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpLinux64, 'MinimapGenerator');
 end;
 
 
@@ -485,7 +473,109 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step08_PackData(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step08_DedicatedServer(aConfig: TKMBuildConfiguration);
+begin
+  // Build
+  begin
+    BuildDelphi(fDelphiRSVarsPath, 'utils\KP_DedicatedServer\KP_DedicatedServer.dproj', aConfig, bpWin32, 'utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+
+    if CheckTerminated then Exit;
+
+    BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
+
+    if CheckTerminated then Exit;
+
+    BuildFpc(fFPCUPdeluxePath, 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64.lpi', 'utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
+  end;
+
+  var buildFolder := Format('.\KnightsProvince DedicatedServer r%d\', [fBuildRevision]);
+  var archiveFilename := Format('.\KnightsProvince DedicatedServer r%d.7z', [fBuildRevision]);
+
+  // Remove previous attemp
+  if DirectoryExists(buildFolder) then
+  begin
+    fOnLog(Format('Deleting old DedicatedServer folder of "%s"', [buildFolder]));
+    TDirectory.Delete(buildFolder, True);
+  end;
+
+  // Arrange
+  begin
+    ForceDirectories(buildFolder);
+    CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer.exe', buildFolder + 'KP_DedicatedServer.exe');
+    CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86', buildFolder + 'KP_DedicatedServer_Linux_x86');
+    CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64', buildFolder + 'KP_DedicatedServer_Linux_x64');
+    CopyFile('.\utils\KP_DedicatedServer\KnightsProvince_Settings.ini', buildFolder + 'KnightsProvince_Settings.ini');
+    CopyFile('.\utils\KP_DedicatedServer\readme.md', buildFolder + 'readme.md');
+  end;
+
+  // Pack
+  begin
+    CheckFileExists('7-zip', f7zipPath);
+
+    // Delete old archive if we had it for some reason
+    DeleteFileIfExists(archiveFilename);
+
+    var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s*"', [f7zipPath, archiveFilename, buildFolder]);
+    var res := CaptureConsoleOutput('.\', cmd7zip);
+    fOnLog(res);
+
+    CheckFileExists('Resulting 7z archive', archiveFilename);
+
+    var szAfter := TFile.GetSize(archiveFilename);
+    fOnLog(Format('Size of 7z - %d bytes', [szAfter]));
+
+    if szAfter <= 0 then
+      raise Exception.Create('Resulting 7z archive is too small?');
+  end;
+end;
+
+
+procedure TKMBuilderKP.Step09_MinimapGenerator(aConfig: TKMBuildConfiguration);
+begin
+  // Build
+  BuildDelphi(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpLinux64, 'MinimapGenerator');
+
+  var buildFolder := Format('.\MinimapGenerator r%d\', [fBuildRevision]);
+  var archiveFilename := Format('.\MinimapGenerator r%d.7z', [fBuildRevision]);
+
+  // Remove previous attemp
+  if DirectoryExists(buildFolder) then
+  begin
+    fOnLog(Format('Deleting old MinimapGenerator folder of "%s"', [buildFolder]));
+    TDirectory.Delete(buildFolder, True);
+  end;
+
+  // Arrange
+  begin
+    ForceDirectories(buildFolder);
+    CopyFilesRecursive('.\data\', buildFolder + 'data\', '*.xml', True);
+    CopyFile('.\MinimapGenerator', buildFolder + 'MinimapGenerator');
+    CopyFile('.\utils\MinimapGenerator\Changelog.txt', buildFolder + 'Changelog.txt');
+  end;
+
+  // Pack
+  begin
+    CheckFileExists('7-zip', f7zipPath);
+
+    // Delete old archive if we had it for some reason
+    DeleteFileIfExists(archiveFilename);
+
+    var cmd7zip := Format('"%s" a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=128m -ms=on "%s" "%s*"', [f7zipPath, archiveFilename, buildFolder]);
+    var res := CaptureConsoleOutput('.\', cmd7zip);
+    fOnLog(res);
+
+    CheckFileExists('Resulting 7z archive', archiveFilename);
+
+    var szAfter := TFile.GetSize(archiveFilename);
+    fOnLog(Format('Size of 7z - %d bytes', [szAfter]));
+
+    if szAfter <= 0 then
+      raise Exception.Create('Resulting 7z archive is too small?');
+  end;
+end;
+
+
+procedure TKMBuilderKP.Step10_PackData(aConfig: TKMBuildConfiguration);
 begin
   var dataPackerFilename := 'DataPacker.exe';
   CheckFileExists('DataPacker', dataPackerFilename);
@@ -510,7 +600,7 @@ end;
 
 
 //todo -cBuilder: It seems to make more sense to run the tests ASAP (fail fast), so think about moving this step to be executed earlier
-procedure TKMBuilderKP.Step09_RunTests(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step11_RunTests(aConfig: TKMBuildConfiguration);
 begin
   // Unit tests
   BuildDelphi(fDelphiRSVarsPath, 'utils\TestingUnitTests\TestingUnitTests.dproj', bcRelease, bpWin32, 'TestingUnitTests.exe');
@@ -534,7 +624,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step10_ArrangeFolder(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step12_ArrangeFolder(aConfig: TKMBuildConfiguration);
 begin
   if DirectoryExists('.\' + fBuildFolder) then
   begin
@@ -572,6 +662,7 @@ begin
 
   if CheckTerminated then Exit;
 
+  // Include Dedicated Server too
   CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer.exe', fBuildFolder + 'KP_DedicatedServer.exe');
   CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86', fBuildFolder + 'KP_DedicatedServer_Linux_x86');
   CopyFile('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64', fBuildFolder + 'KP_DedicatedServer_Linux_x64');
@@ -581,7 +672,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step11_Pack7zip(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step13_Pack7zip(aConfig: TKMBuildConfiguration);
 begin
   CheckFileExists('7-zip', f7zipPath);
 
@@ -602,7 +693,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step12_PackInstaller(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step14_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   // old - Knights Province (Alpha 13.2 r17800)
   // new - Knights Province Alpha 13.2.17800
@@ -642,7 +733,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step13_CreatePatch(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step15_CreatePatch(aConfig: TKMBuildConfiguration);
 begin
   var launcherFilename := ExpandFileName('.\Launcher.exe');
   var result7zipFilename := ExpandFileName('.\' + fBuildResult7zip);
@@ -657,7 +748,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step14_RegisterOnKT(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step16_RegisterOnKT(aConfig: TKMBuildConfiguration);
 begin
   var ktAdminFilename := '.\KT_Admin.exe';
   CheckFileExists('KT Admin', ktAdminFilename);
@@ -670,7 +761,7 @@ begin
 end;
 
 
-procedure TKMBuilderKP.Step15_CommitAndTag(aConfig: TKMBuildConfiguration);
+procedure TKMBuilderKP.Step17_CommitAndTag(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('commit ..');
   var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
