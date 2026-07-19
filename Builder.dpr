@@ -9,7 +9,8 @@ uses
   KM_BuilderManager in 'KM_BuilderManager.pas',
   KM_BuilderCommon in 'KM_BuilderCommon.pas',
   KM_BuilderKMR in 'KM_BuilderKMR.pas',
-  KM_BuilderKP in 'KM_BuilderKP.pas';
+  KM_BuilderKP in 'KM_BuilderKP.pas',
+  KM_BuilderUtility in 'KM_BuilderUtility.pas';
 
 {$R *.res}
 

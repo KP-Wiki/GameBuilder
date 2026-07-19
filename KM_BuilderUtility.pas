@@ -14,7 +14,7 @@ type
     class function New(aFilePath: string; aLineNumber: Integer; aLineText: string; aFlagName: string): TKMDebugScan; static;
   end;
 
-procedure ScanForCompilerDirectivesInPas(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
+procedure ScanForCompilerDirectivesInPas(const aPath, aSkip, aIncText: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 procedure ScanForDebugFlagsInPas(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 procedure ScanForDebugFlagsInInc(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 
@@ -35,7 +35,7 @@ begin
 end;
 
 
-procedure ScanForCompilerDirectivesInPas(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
+procedure ScanForCompilerDirectivesInPas(const aPath, aSkip, aIncText: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 begin
   var fullPath := ExpandFileName(aPath);
   var arrayFiles := TDirectory.GetFiles(fullPath, '*.pas', TSearchOption.soAllDirectories);
@@ -47,8 +47,8 @@ begin
   begin
     var fname := arrayFiles[I];
 
-    // Skip 3rdparty files (we dont control them)
-    if Pos('3rdparty\', fname) <> 0 then
+    // Skip 3rdparty/ext files (we dont control them)
+    if Pos(aSkip, fname) <> 0 then
       Continue;
 
     // Skip deprecated files (we dont care about them)
@@ -57,8 +57,13 @@ begin
 
     sl.LoadFromFile(fname);
 
-    if sl[1] <> '{$I KM_CompilerDirectives.inc}' then
-      aOnFlag(TKMDebugScan.New(ExtractRelativePath(fullPath, fname), 2, sl[1], 'Has no $I on 2nd line'));
+    var incFound := False;
+    for var K := 0 to 7 do
+      if sl[K] = aIncText then
+        incFound := True;
+
+    if not incFound then
+      aOnFlag(TKMDebugScan.New(ExtractRelativePath(fullPath, fname), 2, sl[1], 'Has no $I in first 8 lines'));
 
     Inc(aFilesScanned);
   end;

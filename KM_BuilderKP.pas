@@ -320,7 +320,7 @@ begin
   // Scan game code for compiler directives included (ignore Utils for now)
   begin
     var scanCount: Integer;
-    ScanForCompilerDirectivesInPas('.\src\',
+    ScanForCompilerDirectivesInPas('.\src\', '3rdparty\', '{$I KM_CompilerDirectives.inc}',
       procedure (aFlag: TKMDebugScan)
       begin
         fOnLog(Format('%s: %s', [aFlag.FilePath, aFlag.FlagName]));

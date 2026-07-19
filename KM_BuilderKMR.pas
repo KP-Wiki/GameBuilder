@@ -240,27 +240,43 @@ begin
 
   fGameBuildFlags := '';
 
-  // Scan game code for debug flags (ignore Utils for now)
-  var pasFilesScanned: Integer;
-  ScanForDebugFlagsInPas('.\src\',
-    procedure (aFlag: TKMDebugScan)
-    begin
-      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
-    end,
-    pasFilesScanned);
-  fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
+  // Scan game code for compiler directives included (ignore Utils for now)
+  begin
+    var scanCount: Integer;
+    ScanForCompilerDirectivesInPas('.\src\', 'ext\', '{$I KaM_Remake.inc}',
+      procedure (aFlag: TKMDebugScan)
+      begin
+        fOnLog(Format('%s: %s', [aFlag.FilePath, aFlag.FlagName]));
+      end,
+      scanCount);
+    fOnLog(Format('Scanned %d pas files', [scanCount]));
+  end;
 
   // Scan game code for debug flags (ignore Utils for now)
-  var incFilesScanned: Integer;
-  ScanForDebugFlagsInInc('.\',
-    procedure (aFlag: TKMDebugScan)
-    begin
-      fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
-      fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
-    end,
-    incFilesScanned);
-  fOnLog(Format('Scanned %d inc files', [incFilesScanned]));
+  begin
+    var pasFilesScanned: Integer;
+    ScanForDebugFlagsInPas('.\src\',
+      procedure (aFlag: TKMDebugScan)
+      begin
+        fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+        fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
+      end,
+      pasFilesScanned);
+    fOnLog(Format('Scanned %d pas files', [pasFilesScanned]));
+  end;
+
+  // Scan game code for debug flags (ignore Utils for now)
+  begin
+    var incFilesScanned: Integer;
+    ScanForDebugFlagsInInc('.\',
+      procedure (aFlag: TKMDebugScan)
+      begin
+        fOnLog(Format('%s [%d]: %s', [aFlag.FilePath, aFlag.LineNumber, aFlag.LineText]));
+        fGameBuildFlags := fGameBuildFlags + IfThen(fGameBuildFlags <> '', ', ') + aFlag.FlagName;
+      end,
+      incFilesScanned);
+    fOnLog(Format('Scanned %d inc files', [incFilesScanned]));
+  end;
 end;
 
 
