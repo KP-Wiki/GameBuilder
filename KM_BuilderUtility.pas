@@ -3,8 +3,10 @@ interface
 uses
   System.SysUtils;
 
+
 type
   TKMDebugScan = record
+  public
     FilePath: string;
     LineNumber: Integer;
     LineText: string;
@@ -12,7 +14,7 @@ type
     class function New(aFilePath: string; aLineNumber: Integer; aLineText: string; aFlagName: string): TKMDebugScan; static;
   end;
 
-
+procedure ScanForCompilerDirectivesInPas(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 procedure ScanForDebugFlagsInPas(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 procedure ScanForDebugFlagsInInc(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
 
@@ -30,6 +32,37 @@ begin
   Result.LineNumber := aLineNumber;
   Result.LineText := aLineText;
   Result.FlagName := aFlagName;
+end;
+
+
+procedure ScanForCompilerDirectivesInPas(const aPath: string; aOnFlag: TProc<TKMDebugScan>; out aFilesScanned: Integer);
+begin
+  var fullPath := ExpandFileName(aPath);
+  var arrayFiles := TDirectory.GetFiles(fullPath, '*.pas', TSearchOption.soAllDirectories);
+
+  aFilesScanned := Length(arrayFiles);
+
+  var sl := TStringList.Create;
+  for var I := 0 to High(arrayFiles) do
+  begin
+    var fname := arrayFiles[I];
+
+    // Skip 3rdparty files (we dont control them)
+    if Pos('3rdparty\', fname) <> 0 then
+      Continue;
+
+    // Skip deprecated files (we dont care about them)
+    if StartsText('_', ExtractFileName(fname)) then
+      Continue;
+
+    sl.LoadFromFile(fname);
+
+    if sl[1] <> '{$I KM_CompilerDirectives.inc}' then
+      aOnFlag(TKMDebugScan.New(ExtractRelativePath(fullPath, fname), 2, sl[1], 'Has no $I on 2nd line'));
+
+    Inc(aFilesScanned);
+  end;
+  sl.Free;
 end;
 
 
@@ -121,7 +154,6 @@ begin
   end;
   sl.Free;
 end;
-
 
 
 end.
