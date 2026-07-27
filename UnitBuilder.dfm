@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Game Builder'
-  ClientHeight = 801
+  ClientHeight = 833
   ClientWidth = 1074
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     1074
-    801)
+    833)
   TextHeight = 15
   object Label1: TLabel
     Left = 312
@@ -38,14 +38,14 @@ object Form1: TForm1
   end
   object Label4: TLabel
     Left = 16
-    Top = 168
+    Top = 200
     Width = 31
     Height = 15
     Caption = 'Steps:'
   end
   object Label5: TLabel
     Left = 16
-    Top = 712
+    Top = 744
     Width = 34
     Height = 15
     Anchors = [akLeft, akBottom]
@@ -56,7 +56,7 @@ object Form1: TForm1
     Left = 312
     Top = 344
     Width = 746
-    Height = 441
+    Height = 473
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -71,11 +71,11 @@ object Form1: TForm1
     ScrollBars = ssVertical
     TabOrder = 0
     ExplicitWidth = 742
-    ExplicitHeight = 320
+    ExplicitHeight = 440
   end
   object btnStop: TButton
     Left = 16
-    Top = 760
+    Top = 792
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -86,11 +86,11 @@ object Form1: TForm1
     Caption = 'Stop'
     TabOrder = 1
     OnClick = btnStopClick
-    ExplicitTop = 640
+    ExplicitTop = 759
   end
   object pnlBuildSteps: TPanel
     Left = 16
-    Top = 184
+    Top = 216
     Width = 289
     Height = 513
     Anchors = [akLeft, akTop, akBottom]
@@ -103,7 +103,7 @@ object Form1: TForm1
     Left = 16
     Top = 32
     Width = 289
-    Height = 81
+    Height = 113
     BevelOuter = bvNone
     Caption = '<Builder scenarios. Filled in dynamically>'
     TabOrder = 3
@@ -130,7 +130,7 @@ object Form1: TForm1
   end
   object btnBuildAllProjects: TButton
     Left = 16
-    Top = 728
+    Top = 760
     Width = 289
     Height = 25
     Margins.Left = 2
@@ -141,11 +141,11 @@ object Form1: TForm1
     Caption = 'Build all projects'
     TabOrder = 5
     OnClick = btnBuildAllProjectsClick
-    ExplicitTop = 608
+    ExplicitTop = 727
   end
   object rgBuildConfiguration: TRadioGroup
     Left = 8
-    Top = 120
+    Top = 152
     Width = 193
     Height = 41
     Caption = ' Configuration '

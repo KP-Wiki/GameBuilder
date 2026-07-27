@@ -119,6 +119,9 @@ begin
   // We still want ot build the game to make sure it's not broken
   fBuildScenarios.Add(TKMBuildScenario.Create('Full build, tools only',      bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11]));
 
+  // Full build without commit
+  fBuildScenarios.Add(TKMBuildScenario.Create('Full build to folder',        bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
+
   // Nightly build (same as Release, without Installer)
   fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,   15,16,17]));
 
