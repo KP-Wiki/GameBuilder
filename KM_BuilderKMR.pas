@@ -202,7 +202,7 @@ begin
 
   if CheckTerminated then Exit;
 
-  fOnLog('Pull maps ..');
+  fOnLog(Format('Pulling maps repo from "%s" ..', [fMapsRepoPath]));
   var cmdPullMaps := 'git pull';
   var resPullMaps := CaptureConsoleOutput(fMapsRepoPath, cmdPullMaps);
   fOnLog(resPullMaps);
