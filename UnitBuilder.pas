@@ -38,8 +38,10 @@ type
     procedure ControlsEnable(aFlag: Boolean);
     procedure UpdateStepVisibility(aScenario: Integer);
     procedure HandleBuilderLog(aText: string);
+    procedure HandleBuilderLogVerbose(aText: string);
     procedure HandleBuilderStepBegin(aStep: Integer);
     procedure HandleBuilderStepDone(aStep: Integer; aTimeMsec: Integer);
+    procedure HandleBuilderStepFail(aStep: Integer; aTimeMsec: Integer);
     procedure HandleBuilderScenarioDone;
     procedure HandleBuildMouseEnter(Sender: TObject);
     procedure HandleBuildMouseLeave(Sender: TObject);
@@ -67,7 +69,7 @@ begin
 
   fDefaultBuildConfiguration := bcDebug;
 
-  fBuilderManager := TKMBuilderManager.Create(fGame, HandleBuilderLog, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderScenarioDone);
+  fBuilderManager := TKMBuilderManager.Create(fGame, HandleBuilderLog, HandleBuilderLogVerbose, HandleBuilderStepBegin, HandleBuilderStepDone, HandleBuilderStepFail, HandleBuilderScenarioDone);
 
   meInfo.Text := fBuilderManager.GetInfo;
 
@@ -131,7 +133,7 @@ begin
       meInfo.Text := fBuilderManager.GetInfo;
 
       meLog.Lines.Append(Format('>>>--- Step "%s"', [fBuilderManager.GetStepName(aStep)]));
-      fStepPanel[aStep].Color := $80FFFF;
+      fStepPanel[aStep].Color := $80FFFF; // Yellow
     end);
 end;
 
@@ -145,7 +147,21 @@ begin
 
       meLog.Lines.Append(Format('>>>--- Done "%s"', [fBuilderManager.GetStepName(aStep)]));
       fStepPanel[aStep].Caption := Format('%.1fsec', [aTimeMsec / 1000]);
-      fStepPanel[aStep].Color := $80FF80;
+      fStepPanel[aStep].Color := $80FF80; // Green
+    end);
+end;
+
+
+procedure TForm1.HandleBuilderStepFail(aStep: Integer; aTimeMsec: Integer);
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      meInfo.Text := fBuilderManager.GetInfo;
+
+      meLog.Lines.Append(Format('>>>--- Fail "%s"', [fBuilderManager.GetStepName(aStep)]));
+      fStepPanel[aStep].Caption := Format('%.1fsec', [aTimeMsec / 1000]);
+      fStepPanel[aStep].Color := $8080FF; // Red
     end);
 end;
 
@@ -178,6 +194,18 @@ begin
       sw.Free;
 
       meLog.Lines.Append(aText);
+    end);
+end;
+
+
+procedure TForm1.HandleBuilderLogVerbose(aText: string);
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      var sw := TStreamWriter.Create(ChangeFileExt(Application.ExeName, '.log'), True);
+      sw.WriteLine(aText);
+      sw.Free;
     end);
 end;
 
