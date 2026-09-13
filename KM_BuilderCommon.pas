@@ -55,8 +55,10 @@ type
     fBuildSteps: TList<TKMBuildStep>;
 
     fOnLog: TProc<string>;
+    fOnLogVerbose: TProc<string>;
     fOnStepBegin: TKMEventStepBegin;
     fOnStepDone: TKMEventStepDone;
+    fOnStepFail: TKMEventStepDone;
     fOnDone: TProc;
     fWorker: TThread;
 
@@ -75,7 +77,7 @@ type
     procedure BuildDelphiGroup(const aRSVars, aGroup: string; aConfig: TKMBuildConfiguration);
     procedure BuildFpc(const aFpcUpDeluxe, aProject, aExe: string);
   public
-    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); virtual;
+    constructor Create(aOnLog, aOnLogVerbose: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone, aOnStepFail: TKMEventStepDone; aOnDone: TProc); virtual;
     destructor Destroy; override;
 
     procedure ExecuteConfig(aScenario: Integer);
@@ -126,13 +128,15 @@ end;
 
 
 { TKMBuilder }
-constructor TKMBuilder.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilder.Create(aOnLog, aOnLogVerbose: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone, aOnStepFail: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited Create;
 
   fOnLog := aOnLog;
+  fOnLogVerbose := aOnLogVerbose;
   fOnStepBegin := aOnStepBegin;
   fOnStepDone := aOnStepDone;
+  fOnStepFail := aOnStepFail;
   fOnDone := aOnDone;
 
   fBuildScenarios := TList<TKMBuildScenario>.Create;
@@ -396,6 +400,10 @@ begin
   // Try to capture into local variable, just in case
   thisScenario := aScenario;
 
+  fOnLog('------------------------------------------------------------');
+  fOnLog(Format('Starting scenario "%s"', [GetScenarioName(thisScenario)]));
+  fOnLog('------------------------------------------------------------');
+
   fWorker := TThread.CreateAnonymousThread(
     procedure
     begin
@@ -409,13 +417,18 @@ begin
 
           var tickBegin := GetTickCount;
 
-          fBuildSteps[I].Method(GetScenarioBuildConfig(thisScenario));
-
-          fOnStepDone(I, GetTickCount - tickBegin);
+          try
+            fBuildSteps[I].Method(GetScenarioBuildConfig(thisScenario));
+            fOnStepDone(I, GetTickCount - tickBegin);
+          except
+            fOnStepFail(I, GetTickCount - tickBegin);
+            raise;
+          end;
 
           if CheckTerminated then
             Exit;
         end;
+
         fOnDone;
       except
         on E: Exception do
@@ -447,9 +460,13 @@ begin
 
         var tickBegin := GetTickCount;
 
-        fBuildSteps[thisStep].Method(thisConfig);
-
-        fOnStepDone(thisStep, GetTickCount - tickBegin);
+        try
+          fBuildSteps[thisStep].Method(thisConfig);
+          fOnStepDone(thisStep, GetTickCount - tickBegin);
+        except
+          fOnStepFail(thisStep, GetTickCount - tickBegin);
+          raise;
+        end;
 
         fOnDone;
       except

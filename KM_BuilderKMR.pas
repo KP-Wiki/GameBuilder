@@ -44,7 +44,7 @@ type
     procedure Step13_CommitAndTag(aConfig: TKMBuildConfiguration);
     //todo -cBuilder: git Push wiki
   public
-    constructor Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc); override;
+    constructor Create(aOnLog, aOnLogVerbose: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone, aOnStepFail: TKMEventStepDone; aOnDone: TProc); override;
 
     procedure ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration); override;
 
@@ -60,7 +60,7 @@ uses
 
 
 { TKMBuilderKMR }
-constructor TKMBuilderKMR.Create(aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilderKMR.Create(aOnLog, aOnLogVerbose: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone, aOnStepFail: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited;
 
@@ -570,12 +570,15 @@ begin
   CopyFile(fPrivateRepoPath + 'Installer\CheckKaM.iss', '.\Installer\CheckKaM.iss');
 
   // Delete old installer if we had it for some reason
+  if DirectoryExists('.\temp123\') then
+    TDirectory.Delete('.\temp123\', True);
   DeleteFileIfExists(fBuildResultInstaller);
 
   var swConstants := TStreamWriter.Create('.\Installer\Constants_local.iss');
   // Folders are relative to ".\Installer\"
   swConstants.WriteLine(Format('#define BuildFolder '#39'%s'#39, ['..\' + ExcludeTrailingPathDelimiter(fBuildFolder)]));
-  swConstants.WriteLine(Format('#define OutputFolder '#39'%s'#39, ['..\']));
+  // Place installer in a temp folder, so that the Explorer does not touch it while it's being worked on by Inno
+  swConstants.WriteLine(Format('#define OutputFolder '#39'%s'#39, ['..\temp123\']));
   swConstants.Free;
 
   var swRevision := TStreamWriter.Create('.\Installer\Revision.iss');
@@ -585,15 +588,19 @@ begin
   if CheckTerminated then Exit;
 
   CheckFileExists('InnoSetup', fInnoSetupPath);
-  // InnoSetup is way too verbose by default. Use /Q for quieter log
-  var cmdInstaller := Format('"%s" /Q ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
-  CaptureConsoleOutput2('.\', cmdInstaller, procedure (const aMsg: string) begin fOnLog(aMsg); end);
+  // InnoSetup is way too verbose
+  var cmdInstaller := Format('"%s" ".\installer\InstallerFull.iss"', [fInnoSetupPath]);
+  CaptureConsoleOutput2('.\', cmdInstaller, procedure (const aMsg: string) begin fOnLogVerbose(aMsg); end);
+
+  RenameFile('.\temp123\' + fBuildResultInstaller, '.\' + fBuildResultInstaller);
+  TDirectory.Delete('.\temp123\', True);
 
   var szAfter := TFile.GetSize(fBuildResultInstaller);
   fOnLog(Format('Size of "%s" - %d bytes', [fBuildResultInstaller, szAfter]));
 
-  if szAfter <= 0 then
-    raise Exception.Create('Resulting installer is too small?');
+  if szAfter <= 100000000 then
+    raise Exception.Create('Resulting installer is less than 100mb - too small?' + sLineBreak +
+      'This step often fails due to Windows Defender inspecting the installer EXE while Inno works with it. Add build folder to exclusions or temporary disable the antivirus.');
 end;
 
 
