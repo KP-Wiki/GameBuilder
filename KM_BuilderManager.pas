@@ -20,12 +20,14 @@ type
     fBuilderActive: TKMBuilder;       // Actual builder
 
     fOnLog: TProc<string>;
+    fOnLogVerbose: TProc<string>;
     fOnStepBegin: TKMEventStepBegin;
     fOnStepDone: TKMEventStepDone;
+    fOnStepFail: TKMEventStepDone;
     fOnDone: TProc;
     fWorker: TThread;
   public
-    constructor Create(aGame: TKMBuilderGame; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+    constructor Create(aGame: TKMBuilderGame; aOnLog, aOnLogVerbose: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone, aOnStepFail: TKMEventStepDone; aOnDone: TProc);
     procedure ExecuteScenario(aScenario: Integer);
     procedure ExecuteStep(aStep: Integer; aConfig: TKMBuildConfiguration);
     procedure ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration);
@@ -48,7 +50,7 @@ uses
 
 
 { TKMBuilderManager }
-constructor TKMBuilderManager.Create(aGame: TKMBuilderGame; aOnLog: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone: TKMEventStepDone; aOnDone: TProc);
+constructor TKMBuilderManager.Create(aGame: TKMBuilderGame; aOnLog, aOnLogVerbose: TProc<string>; aOnStepBegin: TKMEventStepBegin; aOnStepDone, aOnStepFail: TKMEventStepDone; aOnDone: TProc);
 begin
   inherited Create;
 
@@ -60,11 +62,13 @@ begin
   end;
 
   fOnLog := aOnLog;
+  fOnLogVerbose := aOnLogVerbose;
   fOnStepBegin := aOnStepBegin;
   fOnStepDone := aOnStepDone;
+  fOnStepFail := aOnStepFail;
   fOnDone := aOnDone;
 
-  fBuilderSwatch := fBuilderClass.Create(nil, nil, nil, nil);
+  fBuilderSwatch := fBuilderClass.Create(nil, nil, nil, nil, nil, nil);
 end;
 
 
@@ -116,7 +120,7 @@ end;
 procedure TKMBuilderManager.ExecuteScenario(aScenario: Integer);
 begin
   fBuilderActive.Free;
-  fBuilderActive := fBuilderClass.Create(fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  fBuilderActive := fBuilderClass.Create(fOnLog, fOnLogVerbose, fOnStepBegin, fOnStepDone, fOnStepFail, fOnDone);
   fBuilderActive.ExecuteConfig(aScenario);
 end;
 
@@ -126,7 +130,7 @@ begin
   if fBuilderActive = nil then
   begin
     //fBuilderActive.Free;
-    fBuilderActive := fBuilderClass.Create(fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+    fBuilderActive := fBuilderClass.Create(fOnLog, fOnLogVerbose, fOnStepBegin, fOnStepDone, fOnStepFail, fOnDone);
   end;
   fBuilderActive.ExecuteStep(aStep, aConfig);
 end;
@@ -135,7 +139,7 @@ end;
 procedure TKMBuilderManager.ExecuteWholeProjectGroup(aConfig: TKMBuildConfiguration);
 begin
   fBuilderActive.Free;
-  fBuilderActive := fBuilderClass.Create(fOnLog, fOnStepBegin, fOnStepDone, fOnDone);
+  fBuilderActive := fBuilderClass.Create(fOnLog, fOnLogVerbose, fOnStepBegin, fOnStepDone, fOnStepFail, fOnDone);
   fBuilderActive.ExecuteWholeProjectGroup(aConfig);
 end;
 
