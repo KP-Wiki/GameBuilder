@@ -567,7 +567,13 @@ begin
   // Arrange
   begin
     ForceDirectories(buildFolder);
+
+    // Copy all spec XMLs
     CopyFilesRecursive('.\data\', buildFolder + 'data\', '*.xml', True);
+
+    // Remove text_meta xml
+    TDirectory.Delete(buildFolder + 'data\text', True);
+
     CopyFile('.\MinimapGenerator', buildFolder + 'MinimapGenerator');
     CopyFile('.\utils\MinimapGenerator\Changelog.txt', buildFolder + 'Changelog.txt');
   end;
