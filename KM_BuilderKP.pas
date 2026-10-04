@@ -229,13 +229,7 @@ end;
 
 
 procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
-begin
-  // E.g.: Alpha 13.2
-  var buildName := Format('%s %d.%d', [fBuildName, fBuildMinor, fBuildRelease]);
-
-
-  // There is a number of locations that have game version:
-  //  - KM_Const
+  procedure CheckConst(const aBuildName: string);
   begin
     var gameVersionConstFound := False;
     var sr := TStreamReader.Create('.\src\KM_Const.pas');
@@ -244,7 +238,7 @@ begin
       if Pos('GAME_VERSION', pasLine) > 0 then
       begin
         gameVersionConstFound := True;
-        if Pos(buildName, pasLine) = 0 then
+        if Pos(aBuildName, pasLine) = 0 then
           raise Exception.CreateFmt('Game version in file - "%s"', [Trim(pasLine)]);
         Break;
       end;
@@ -257,31 +251,26 @@ begin
     fOnLog(Format('Game version in "%s" - ok', ['.\src\KM_Const.pas']));
   end;
 
-  if CheckTerminated then Exit;
-
-  //  - Readme
+  procedure CheckReadme(const aReadme, aBuildName: string);
   begin
-    var gameVersionFound := False;
-    var sr := TStreamReader.Create('.\Win32\readme_eng.html', TEncoding.ANSI);
+    var gameVersionFound := 0;
+    var sr := TStreamReader.Create(aReadme, TEncoding.ANSI);
+    var verPos := 0;
     repeat
       var htmlLine := sr.ReadLine;
-      if Pos(buildName, htmlLine) > 0 then
-      begin
-        gameVersionFound := True;
-        Break;
-      end;
+      verPos := Pos(aBuildName, htmlLine, verPos + 1);
+      if verPos > 0 then
+        Inc(gameVersionFound);
     until sr.EndOfStream;
     sr.Free;
 
-    if not gameVersionFound then
-      raise Exception.CreateFmt('Game version const not found in "%s"', ['.\Win32\readme_eng.html']);
+    if gameVersionFound <> 2 then
+      raise Exception.CreateFmt('Game version const found %d times. Expected to be found exactly 2 times in the "%s"', [gameVersionFound, aReadme]);
 
-    fOnLog(Format('Game version in "%s" - ok', ['.\Win32\readme_eng.html']));
+    fOnLog(Format('Game version in "%s" - ok', [aReadme]));
   end;
 
-  if CheckTerminated then Exit;
-
-  //  - Changelog
+  procedure CheckChangelog(const aBuildName: string);
   begin
     // We have changelogs only after Minor versions. Release versions get included into them
     // Changelog Alpha 13.txt
@@ -292,7 +281,7 @@ begin
     var sr := TStreamReader.Create(changelogFilename);
     repeat
       var txtLine := sr.ReadLine;
-      if Pos(buildName, txtLine) > 0 then
+      if Pos(aBuildName, txtLine) > 0 then
       begin
         gameVersionFound := True;
         Break;
@@ -305,6 +294,25 @@ begin
 
     fOnLog(Format('Game version in "%s" - ok', [changelogFilename]));
   end;
+begin
+  // E.g.: Alpha 13.2
+  var buildName := Format('%s %d.%d', [fBuildName, fBuildMinor, fBuildRelease]);
+
+  // There is a number of locations that have game version:
+  //  - KM_Const
+  CheckConst(buildName);
+
+  if CheckTerminated then Exit;
+
+  //  - Readme
+  CheckReadme('.\Win32\readme_eng.html', buildName);
+  CheckReadme('.\Win32\readme_rus.html', buildName);
+  CheckReadme('.\Win32\readme_spa.html', buildName);
+
+  if CheckTerminated then Exit;
+
+  //  - Changelog
+  CheckChangelog(buildName);
 end;
 
 
