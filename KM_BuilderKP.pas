@@ -11,10 +11,9 @@ type
     fGameName: string;
     fGameBuildFlags: string;
 
-    fBuildName: string;
+    fBuildEpoch: Integer;
     fBuildMajor: Integer;
     fBuildMinor: Integer;
-    fBuildRelease: Integer;
     fBuildRevision: Integer;
 
     fMapsRepoPath: string;
@@ -73,11 +72,10 @@ begin
   // Builder constants
   fGameName := 'Knights Province';
 
-  fBuildName := 'Alpha';
-  fBuildMajor := 0;
-  fBuildMinor := 13;
-  fBuildRelease := 2;
-  fBuildRevision := -1; // Calculated automatically
+  fBuildEpoch := 0;
+  fBuildMajor := 14;
+  fBuildMinor := 0;
+  fBuildRevision := -1; // Determined automatically
 
   // Component paths (will be moved into INI or XML settings)
   fMapsRepoPath := '..\knights_province.public.git\';
@@ -163,8 +161,8 @@ begin
   var sb := TStringBuilder.Create;
 
   // Constants
-  sb.AppendLine(Format('Game name:      %s %s', [fGameName, fBuildName]));
-  sb.AppendLine(Format('Build:          %d.%d.%d.%d', [fBuildMajor, fBuildMinor, fBuildRelease, fBuildRevision]));
+  sb.AppendLine(Format('Game name:      %s', [fGameName]));
+  sb.AppendLine(Format('Version:        %d.%d.%d r%d', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]));
   sb.AppendLine(Format('Build flags:    %s', [fGameBuildFlags]));
 
   // Component paths
@@ -221,34 +219,56 @@ begin
   fBuildRevision := StrToInt(Trim(res)) - 8500;
   fOnLog(Format('Rev number - %d', [fBuildRevision]));
 
-  // E.g.: "Knights Province Alpha 13.2.17800"
-  fBuildFolder := Format('Knights Province %s %d.%d.%d\', [fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]);
+  // E.g.: "Knights Province 0.14.0 r17800"
+  fBuildFolder := Format('Knights Province %d.%d.%d r%d\', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]);
   fBuildResult7zip := ExcludeTrailingPathDelimiter(fBuildFolder) + '.7z';
   fBuildResultInstaller := ExcludeTrailingPathDelimiter(fBuildFolder) + ' Installer.exe';
 end;
 
 
 procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
-  procedure CheckConst(const aBuildName: string);
+  procedure CheckVersion;
+  var
+    gameVersionConst: array [0..2] of Boolean;
   begin
-    var gameVersionConstFound := False;
-    var sr := TStreamReader.Create('.\src\KM_Const.pas');
+    var gameVersionConstFound := 0;
+    var sr := TStreamReader.Create('.\src\KM_Version.pas');
     repeat
       var pasLine := sr.ReadLine;
-      if Pos('GAME_VERSION', pasLine) > 0 then
+
+      if not gameVersionConst[0] and ContainsStr(pasLine, 'GAME_VERSION_EPOCH') then
       begin
-        gameVersionConstFound := True;
-        if Pos(aBuildName, pasLine) = 0 then
-          raise Exception.CreateFmt('Game version in file - "%s"', [Trim(pasLine)]);
-        Break;
+        gameVersionConst[0] := True;
+        if Pos(IntToStr(fBuildEpoch), pasLine) = 0 then
+          raise Exception.CreateFmt('Game version Epoch in file - "%s"', [Trim(pasLine)]);
+      end;
+
+      if not gameVersionConst[1] and ContainsStr(pasLine, 'GAME_VERSION_MAJOR') then
+      begin
+        gameVersionConst[1] := True;
+        if Pos(IntToStr(fBuildEpoch), pasLine) = 0 then
+          raise Exception.CreateFmt('Game version Major in file - "%s"', [Trim(pasLine)]);
+      end;
+
+      if not gameVersionConst[2] and ContainsStr(pasLine, 'GAME_VERSION_MINOR') then
+      begin
+        gameVersionConst[2] := True;
+        if Pos(IntToStr(fBuildEpoch), pasLine) = 0 then
+          raise Exception.CreateFmt('Game version Minor in file - "%s"', [Trim(pasLine)]);
       end;
     until sr.EndOfStream;
     sr.Free;
 
-    if not gameVersionConstFound then
-      raise Exception.CreateFmt('Game version const not found in "%s"', ['.\src\KM_Const.pas']);
+    if not gameVersionConst[0]  then
+      raise Exception.CreateFmt('Game version Epoch const not found in "%s"', ['.\src\KM_Version.pas']);
 
-    fOnLog(Format('Game version in "%s" - ok', ['.\src\KM_Const.pas']));
+    if not gameVersionConst[1] then
+      raise Exception.CreateFmt('Game version Major const not found in "%s"', ['.\src\KM_Version.pas']);
+
+    if not gameVersionConst[2] then
+      raise Exception.CreateFmt('Game version Minor const not found in "%s"', ['.\src\KM_Version.pas']);
+
+    fOnLog(Format('Game version in "%s" - ok', ['.\src\KM_Version.pas']));
   end;
 
   procedure CheckReadme(const aReadme, aBuildName: string);
@@ -272,9 +292,9 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
 
   procedure CheckChangelog(const aBuildName: string);
   begin
-    // We have changelogs only after Minor versions. Release versions get included into them
-    // Changelog Alpha 13.txt
-    var changelogFilename := Format('.\Changelog %s %d.txt', [fBuildName, fBuildMinor]);
+    // We have changelogs only after Major versions. Release versions get included into them
+    // Changelog 0.14.txt
+    var changelogFilename := Format('.\Changelog %d.%d.txt', [fBuildEpoch, fBuildMajor]);
     CheckFileExists('Changelog', changelogFilename);
 
     var gameVersionFound := False;
@@ -295,12 +315,12 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
     fOnLog(Format('Game version in "%s" - ok', [changelogFilename]));
   end;
 begin
-  // E.g.: Alpha 13.2
-  var buildName := Format('%s %d.%d', [fBuildName, fBuildMinor, fBuildRelease]);
+  // E.g.: 0.14.0
+  var buildName := Format('%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor]);
 
   // There is a number of locations that have game version:
-  //  - KM_Const
-  CheckConst(buildName);
+  //  - KM_Version
+  CheckVersion;
 
   if CheckTerminated then Exit;
 
@@ -372,7 +392,7 @@ procedure TKMBuilderKP.Step04_WriteVersion(aConfig: TKMBuildConfiguration);
 begin
   // Write revision number for the game exe and Launcher/Updater
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
-  TFile.WriteAllText('.\version', Format('%s %d.%d r%d', [fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]));
+  TFile.WriteAllText('.\version', Format('%d.%d.%d r%d', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]));
 
   var countVerInfoMajor := 0;
   var countVerInfoMinor := 0;
@@ -389,19 +409,19 @@ begin
       var tagVerInfoMajorOpen := Pos('<VerInfo_MajorVer>', sl[I]);
       if tagVerInfoMajorOpen > 0 then
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [fBuildMajor]);
+        sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [fBuildEpoch]);
         Inc(countVerInfoMajor);
       end;
       var tagVerInfoMinorOpen := Pos('<VerInfo_MinorVer>', sl[I]);
       if tagVerInfoMinorOpen > 0 then
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [fBuildMinor]);
+        sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [fBuildMajor]);
         Inc(countVerInfoMinor);
       end;
       var tagVerInfoReleaseOpen := Pos('<VerInfo_Release>', sl[I]);
       if tagVerInfoReleaseOpen > 0 then
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [fBuildRelease]);
+        sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [fBuildMinor]);
         Inc(countVerInfoRelease);
       end;
       var tagVerInfoBuildOpen := Pos('<VerInfo_Build>', sl[I]);
@@ -417,13 +437,14 @@ begin
         var tagFileVersionOpen := Pos('FileVersion=', sl[I]);
         var tagFileVersionClose := Pos(';', sl[I], tagFileVersionOpen);
 
-        sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [fBuildMajor, fBuildMinor, fBuildRelease, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
+        // Must contain only four numbers separated by "."
+        sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
         Inc(countFileVersion);
 
         var tagProductVersionOpen := Pos('ProductVersion=', sl[I]);
         var tagProductVersionClose := Pos(';', sl[I], tagProductVersionOpen);
 
-        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [fBuildMajor, fBuildMinor, fBuildRelease]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
+        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
         Inc(countProductVersion);
       end;
     end;
@@ -729,8 +750,8 @@ end;
 procedure TKMBuilderKP.Step14_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   // old - Knights Province (Alpha 13.2 r17800)
-  // new - Knights Province Alpha 13.2.17800
-  var appName := Format('%s %s %d.%d.%d)', [fGameName, fBuildName, fBuildMinor, fBuildRelease, fBuildRevision]);
+  // new - Knights Province 0.13.2 r17800
+  var appName := Format('%s %d.%d.%d r%d)', [fGameName, fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]);
 
   // Delete old installer if we had it for some reason
   if DirectoryExists('.\temp123\') then
@@ -800,8 +821,8 @@ begin
 
   // Example:
   // old - ".\KT_Admin.exe" register "kp2025-10-29 (Alpha 13 wip r17455)" 13 17492
-  // new - ".\KT_Admin.exe" register "Knights Province Alpha 13.2.17800" 13 17800
-  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, fBuildFolder, fBuildMinor, fBuildRevision]);
+  // new - ".\KT_Admin.exe" register "Knights Province 0.14.0 r17800" 14 17800
+  var cmdKtAdmin := Format('"%s" register "%s" %d %d', [ktAdminFilename, fBuildFolder, fBuildMajor, fBuildRevision]);
   CreateProcessSimple(cmdKtAdmin, True, True, False);
 end;
 
@@ -809,7 +830,7 @@ end;
 procedure TKMBuilderKP.Step17_CommitAndTag(aConfig: TKMBuildConfiguration);
 begin
   fOnLog('commit ..');
-  var cmdCommit := Format('git commit -m "New version %d" -- "KM_Revision.inc"', [fBuildRevision]);
+  var cmdCommit := Format('git commit -m "New version r%d" -- "KM_Revision.inc"', [fBuildRevision]);
   CreateProcessSimple(cmdCommit, False, True, False);
 
   if CheckTerminated then Exit;
