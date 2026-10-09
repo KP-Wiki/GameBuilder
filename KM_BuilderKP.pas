@@ -583,8 +583,8 @@ begin
   // Build
   BuildDelphi(fDelphiRSVarsPath, 'utils\MinimapGenerator\MinimapGenerator.dproj', aConfig, bpLinux64, 'MinimapGenerator');
 
-  var buildFolder := Format('.\MinimapGenerator r%d\', [fBuildRevision]);
-  var archiveFilename := Format('.\MinimapGenerator r%d.7z', [fBuildRevision]);
+  var buildFolder := Format('.\KnightsProvince MinimapGenerator r%d\', [fBuildRevision]);
+  var archiveFilename := Format('.\KnightsProvince MinimapGenerator r%d.7z', [fBuildRevision]);
 
   // Remove previous attemp
   if DirectoryExists(buildFolder) then
