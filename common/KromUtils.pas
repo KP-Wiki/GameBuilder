@@ -79,7 +79,7 @@ begin
     nil,
     nil,
     False,
-    CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS or (BELOW_NORMAL_PRIORITY_CLASS * Ord(aLowPriority)),
+    CREATE_NEW_CONSOLE or IfThen(aLowPriority, BELOW_NORMAL_PRIORITY_CLASS, NORMAL_PRIORITY_CLASS),
     nil,
     nil,
     StartupInfo,

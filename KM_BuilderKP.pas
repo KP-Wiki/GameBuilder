@@ -754,7 +754,7 @@ procedure TKMBuilderKP.Step14_PackInstaller(aConfig: TKMBuildConfiguration);
 begin
   // old - Knights Province (Alpha 13.2 r17800)
   // new - Knights Province 0.13.2 r17800
-  var appName := Format('%s %d.%d.%d r%d)', [fGameName, fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]);
+  var appName := Format('%s %d.%d.%d r%d', [fGameName, fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]);
 
   // Delete old installer if we had it for some reason
   if DirectoryExists('.\temp123\') then
