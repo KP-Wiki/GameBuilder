@@ -179,8 +179,8 @@ begin
   if CheckTerminated then Exit;
 
   fOnLog('Checkout master ..');
-  var cmdCheckuotMaster := 'git checkout master';
-  var resCheckoutMaster := CaptureConsoleOutput('.\', cmdCheckuotMaster);
+  var cmdCheckoutMaster := 'git checkout master';
+  var resCheckoutMaster := CaptureConsoleOutput('.\', cmdCheckoutMaster);
   fOnLog(resCheckoutMaster);
   fOnLog('Checkout master done' + sLineBreak);
 
@@ -236,7 +236,7 @@ begin
   // - DBG_PERFLOG
   // - DBG_DBG_RNG_SPY
   // KM_Defaults:
-  // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
+  // - DBG_ flags // I want to make a rule that every debug flag must be named DBG_*** and be set to False by default (like in KP). Then any True one is a red flag
 
   fGameBuildFlags := '';
 

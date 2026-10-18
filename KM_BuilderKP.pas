@@ -347,7 +347,7 @@ begin
   // - DBG_PERFLOG
   // - DBG_DBG_RNG_SPY
   // KM_Defaults:
-  // - DBG_ flags // I want to make a rule that every debug flag must be names DBG_*** and be set to False vy default (like in KP). Then any True one is a redflag
+  // - DBG_ flags // I want to make a rule that every debug flag must be named DBG_*** and be set to False by default (like in KP). Then any True one is a red flag
 
   fGameBuildFlags := '';
 
@@ -541,7 +541,7 @@ begin
   var buildFolder := Format('.\KnightsProvince DedicatedServer r%d\', [fBuildRevision]);
   var archiveFilename := Format('.\KnightsProvince DedicatedServer r%d.7z', [fBuildRevision]);
 
-  // Remove previous attemp
+  // Remove previous attempt
   if DirectoryExists(buildFolder) then
   begin
     fOnLog(Format('Deleting old DedicatedServer folder of "%s"', [buildFolder]));
@@ -588,7 +588,7 @@ begin
   var buildFolder := Format('.\KnightsProvince MinimapGenerator r%d\', [fBuildRevision]);
   var archiveFilename := Format('.\KnightsProvince MinimapGenerator r%d.7z', [fBuildRevision]);
 
-  // Remove previous attemp
+  // Remove previous attempt
   if DirectoryExists(buildFolder) then
   begin
     fOnLog(Format('Deleting old MinimapGenerator folder of "%s"', [buildFolder]));
