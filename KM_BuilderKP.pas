@@ -231,6 +231,10 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
   var
     gameVersionConst: array [0..2] of Boolean;
   begin
+    gameVersionConst[0] := False;
+    gameVersionConst[1] := False;
+    gameVersionConst[2] := False;
+
     var sr := TStreamReader.Create('.\src\KM_Version.pas');
     repeat
       var pasLine := sr.ReadLine;
@@ -245,14 +249,14 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
       if not gameVersionConst[1] and ContainsStr(pasLine, 'GAME_VERSION_MAJOR') then
       begin
         gameVersionConst[1] := True;
-        if Pos(IntToStr(fBuildEpoch), pasLine) = 0 then
+        if Pos(IntToStr(fBuildMajor), pasLine) = 0 then
           raise Exception.CreateFmt('Game version Major in file - "%s"', [Trim(pasLine)]);
       end;
 
       if not gameVersionConst[2] and ContainsStr(pasLine, 'GAME_VERSION_MINOR') then
       begin
         gameVersionConst[2] := True;
-        if Pos(IntToStr(fBuildEpoch), pasLine) = 0 then
+        if Pos(IntToStr(fBuildMinor), pasLine) = 0 then
           raise Exception.CreateFmt('Game version Minor in file - "%s"', [Trim(pasLine)]);
       end;
     until sr.EndOfStream;
