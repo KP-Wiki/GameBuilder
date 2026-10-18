@@ -298,7 +298,7 @@ begin
       begin
         placeholderFound := True;
 
-        if (I + 2 >= sl.Count - 1) or (sl[I + 1] = '') or (sl[I + 2] = '') then
+        if (I + 2 > sl.Count - 1) or (sl[I + 1] = '') or (sl[I + 2] = '') then
           raise Exception.Create('Version placeholder in Changelog.txt must be followed by a separator line and at least one entry');
 
         // We dont trust system function for date formatting, they fallback to native OS format
