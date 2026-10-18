@@ -12,7 +12,7 @@ function Adler32CRC(aPointer: Pointer; aLength: Cardinal): Cardinal; overload;
 function Adler32CRC(const aText: string): Cardinal; overload;
 function Adler32CRC(S: TMemoryStream): Cardinal; overload;
 
-function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
+function CreateProcessSimple(const aCommandLine: string; aShowWindow, aWait, aLowPriority: Boolean): THandle;
 procedure TerminateProcessSimple(aProcessHandle: NativeUInt);
 function CaptureConsoleOutput(const aFolder, aString: string): string;
 procedure CaptureConsoleOutput2(const aFolder, aString: string; aOnOutput: TKMOnOutput);
@@ -57,16 +57,17 @@ begin
 end;
 
 
-function CreateProcessSimple(const aFilename: string; aShowWindow, aWait, aLowPriority: Boolean): NativeUInt;
+function CreateProcessSimple(const aCommandLine: string; aShowWindow, aWait, aLowPriority: Boolean): THandle;
 var
   StartupInfo: TStartupInfo;
   ProcessInfo: TProcessInformation;
-  res: Cardinal;
-  CmdLine: array[0..255] of WideChar;
+  exitCode: Cardinal;
+  cmdLine: WideString;
 begin
-  // We need strings to be modifiable, since CreateProcessW plays "dirty" and crashes otherwise
-  // Hence we have to make local copy
-  StringToWideChar(aFilename, CmdLine, Length(CmdLine));
+  // CreateProcessW may modify the command line buffer in-place, so we need a private copy
+  SetLength(cmdLine, Length(aCommandLine));
+  if Length(aCommandLine) > 0 then
+    Move(PChar(aCommandLine)^, cmdLine[1], Length(aCommandLine) * SizeOf(WideChar));
 
   FillChar(StartupInfo, Sizeof(StartupInfo), #0);
   StartupInfo.cb := Sizeof(StartupInfo);
@@ -75,7 +76,7 @@ begin
 
   if not CreateProcess(
     nil,
-    CmdLine,
+    PChar(cmdLine),
     nil,
     nil,
     False,
@@ -86,14 +87,21 @@ begin
     ProcessInfo) then
     RaiseLastOSError;
 
-  Result := ProcessInfo.hProcess;
+  // hThread is never returned to the caller, so always close it
+  CloseHandle(ProcessInfo.hThread);
 
-  if aWait then
-  begin
-    WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
-    GetExitCodeProcess(ProcessInfo.hProcess, res);
-    Result := 0;
-  end;
+  if not aWait then
+    Exit(ProcessInfo.hProcess);
+
+  // Wait for the process to finish and check the exit code
+  WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+  GetExitCodeProcess(ProcessInfo.hProcess, exitCode);
+  CloseHandle(ProcessInfo.hProcess);
+
+  if exitCode <> 0 then
+    raise Exception.CreateFmt('Command line "%s" exited with code %d', [aCommandLine, exitCode]);
+
+  Result := 0;
 end;
 
 
