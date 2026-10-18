@@ -229,47 +229,39 @@ end;
 procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
   procedure CheckVersion;
   var
-    gameVersionConst: array [0..2] of Boolean;
+    foundEpoch, foundMajor, foundMinor: Boolean;
   begin
-    gameVersionConst[0] := False;
-    gameVersionConst[1] := False;
-    gameVersionConst[2] := False;
+    foundEpoch := False;
+    foundMajor := False;
+    foundMinor := False;
 
     var sr := TStreamReader.Create('.\src\KM_Version.pas');
     repeat
       var pasLine := sr.ReadLine;
-
-      if not gameVersionConst[0] and ContainsStr(pasLine, 'GAME_VERSION_EPOCH') then
+      if ContainsStr(pasLine, 'GAME_VERSION_EPOCH ') then
       begin
-        gameVersionConst[0] := True;
-        if Pos(IntToStr(fBuildEpoch), pasLine) = 0 then
-          raise Exception.CreateFmt('Game version Epoch in file - "%s"', [Trim(pasLine)]);
+        foundEpoch := True;
+        if Pos(Format('= %d;', [fBuildEpoch]), pasLine) = 0 then
+          raise Exception.CreateFmt('Game version Epoch mismatch: "%s"', [Trim(pasLine)]);
       end;
-
-      if not gameVersionConst[1] and ContainsStr(pasLine, 'GAME_VERSION_MAJOR') then
+      if ContainsStr(pasLine, 'GAME_VERSION_MAJOR ') then
       begin
-        gameVersionConst[1] := True;
-        if Pos(IntToStr(fBuildMajor), pasLine) = 0 then
-          raise Exception.CreateFmt('Game version Major in file - "%s"', [Trim(pasLine)]);
+        foundMajor := True;
+        if Pos(Format('= %d;', [fBuildMajor]), pasLine) = 0 then
+          raise Exception.CreateFmt('Game version Major mismatch: "%s"', [Trim(pasLine)]);
       end;
-
-      if not gameVersionConst[2] and ContainsStr(pasLine, 'GAME_VERSION_MINOR') then
+      if ContainsStr(pasLine, 'GAME_VERSION_MINOR ') then
       begin
-        gameVersionConst[2] := True;
-        if Pos(IntToStr(fBuildMinor), pasLine) = 0 then
-          raise Exception.CreateFmt('Game version Minor in file - "%s"', [Trim(pasLine)]);
+        foundMinor := True;
+        if Pos(Format('= %d;', [fBuildMinor]), pasLine) = 0 then
+          raise Exception.CreateFmt('Game version Minor mismatch: "%s"', [Trim(pasLine)]);
       end;
     until sr.EndOfStream;
     sr.Free;
 
-    if not gameVersionConst[0]  then
-      raise Exception.CreateFmt('Game version Epoch const not found in "%s"', ['.\src\KM_Version.pas']);
-
-    if not gameVersionConst[1] then
-      raise Exception.CreateFmt('Game version Major const not found in "%s"', ['.\src\KM_Version.pas']);
-
-    if not gameVersionConst[2] then
-      raise Exception.CreateFmt('Game version Minor const not found in "%s"', ['.\src\KM_Version.pas']);
+    if not foundEpoch then raise Exception.Create('GAME_VERSION_EPOCH not found in KM_Version.pas');
+    if not foundMajor then raise Exception.Create('GAME_VERSION_MAJOR not found in KM_Version.pas');
+    if not foundMinor then raise Exception.Create('GAME_VERSION_MINOR not found in KM_Version.pas');
 
     fOnLog(Format('Game version in "%s" - ok', ['.\src\KM_Version.pas']));
   end;
