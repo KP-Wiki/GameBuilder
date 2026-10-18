@@ -58,7 +58,7 @@ begin
     sl.LoadFromFile(fname);
 
     var incFound := False;
-    for var K := 0 to 7 do
+    for var K := 0 to Min(8, sl.Count) - 1 do
       if sl[K] = aIncText then
         incFound := True;
 
