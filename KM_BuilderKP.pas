@@ -495,7 +495,6 @@ begin
   if CheckTerminated then Exit;
 
   BuildDelphi(fDelphiRSVarsPath, 'utils\TranslationManager (from kp-wiki)\TranslationManager.dproj', aConfig, bpWin32, 'utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
-
 end;
 
 
