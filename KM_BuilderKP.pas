@@ -231,7 +231,6 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
   var
     gameVersionConst: array [0..2] of Boolean;
   begin
-    var gameVersionConstFound := 0;
     var sr := TStreamReader.Create('.\src\KM_Version.pas');
     repeat
       var pasLine := sr.ReadLine;
