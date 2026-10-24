@@ -103,11 +103,15 @@ begin
   fBuildSteps.Add(TKMBuildStep.New('Commit and Tag',        Step13_CommitAndTag));
 
   // Scenarios
+
+  // Beta build to folder, lots of debug features enabled
+  fBuildScenarios.Add(TKMBuildScenario.Create('Debug (no installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11      ]));
+
   // Beta build with lots of debug features enabled
-  fBuildScenarios.Add(TKMBuildScenario.Create('Debug (installer, no commit)', bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11,12   ]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Debug (installer, no commit)',    bcDebug,   [0,1,2,3,4,5,6,7,8,9,10,11,12   ]));
 
   // Public release version, without any extra slowdowns like DBG_DBG_RNG_SPY or alike
-  fBuildScenarios.Add(TKMBuildScenario.Create('Release (installer)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13]));
+  fBuildScenarios.Add(TKMBuildScenario.Create('Release (installer)',             bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13]));
 end;
 
 
