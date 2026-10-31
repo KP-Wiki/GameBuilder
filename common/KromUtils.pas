@@ -59,7 +59,6 @@ end;
 
 function CreateProcessSimple(const aCommandLine: string; aShowWindow, aWait, aLowPriority: Boolean): THandle;
 var
-  StartupInfo: TStartupInfo;
   ProcessInfo: TProcessInformation;
   exitCode: Cardinal;
   cmdLine: WideString;
@@ -69,7 +68,7 @@ begin
   if Length(aCommandLine) > 0 then
     Move(PChar(aCommandLine)^, cmdLine[1], Length(aCommandLine) * SizeOf(WideChar));
 
-  FillChar(StartupInfo, Sizeof(StartupInfo), #0);
+  var StartupInfo := default(TStartupInfo);
   StartupInfo.cb := Sizeof(StartupInfo);
   StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
   StartupInfo.wShowWindow := IfThen(aShowWindow, SW_SHOWDEFAULT, SW_HIDE);
