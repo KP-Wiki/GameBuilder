@@ -374,7 +374,7 @@ begin
   for var I := Low(LANG) to High(LANG) do
   begin
     //todo -cBuilder: Folder structure should be simplified
-    var cmd := Format('%s -s -f gfm .\Docs\Readme\getting-started_%s.md -o .\Docs\Readme\Readme_%s.html --metadata-file=".\Docs\Readme\Readme\metadata_%s.yml"', [fPandocPath, LANG[I], LANG[I], LANG[I]]);
+    var cmd := Format('%s -c .\Docs\Readme\readme.css -s -f gfm .\Docs\Readme\getting-started_%s.md -o .\Docs\Readme\Readme_%s.html --metadata-file=".\Docs\Readme\Readme\metadata_%s.yml"', [fPandocPath, LANG[I], LANG[I], LANG[I]]);
     var res := CaptureConsoleOutput('.\', cmd);
     fOnLog(res);
   end;
