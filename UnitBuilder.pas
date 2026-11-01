@@ -148,7 +148,7 @@ begin
   else
   begin
     var timeSec := Round((GetTickCount - fRunStartTick) / 1000);
-    Result := Format('[%.2d:%.2d] ', [timeSec div 60, timeSec]);
+    Result := Format('[%.2d:%.2d] ', [timeSec div 60, timeSec mod 60]);
   end;
 end;
 
