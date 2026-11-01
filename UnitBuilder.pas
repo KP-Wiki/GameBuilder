@@ -34,9 +34,16 @@ type
     fStepPanel: array {Step} of TPanel;
     fDefaultBuildConfiguration: TKMBuildConfiguration;
 
+    fRunStartTick: Integer;
+    fInsideStep: Boolean;
+
     procedure CreateButtons;
     procedure ControlsEnable(aFlag: Boolean);
     procedure UpdateStepVisibility(aScenario: Integer);
+    procedure ResetRunState;
+    function GetTimestampPrefix: string;
+    procedure LogAppend(const aText: string = '');
+    procedure LogAppendVerbose(const aText: string = '');
     procedure HandleBuilderLog(aText: string);
     procedure HandleBuilderLogVerbose(aText: string);
     procedure HandleBuilderStepBegin(aStep: Integer);
@@ -51,6 +58,7 @@ type
 implementation
 uses
   System.SysUtils,
+  Winapi.Windows,
   Vcl.Graphics,
   KromUtils;
 
@@ -125,6 +133,48 @@ begin
 end;
 
 
+procedure TForm1.ResetRunState;
+begin
+  fRunStartTick := GetTickCount;
+  fInsideStep := False;
+  meLog.Clear;
+end;
+
+
+function TForm1.GetTimestampPrefix: string;
+begin
+  if fRunStartTick = 0 then
+    Result := ''
+  else
+  begin
+    var timeSec := Round((GetTickCount - fRunStartTick) / 1000);
+    Result := Format('[%.2d:%.2d] ', [timeSec div 60, timeSec]);
+  end;
+end;
+
+
+procedure TForm1.LogAppend(const aText: string = '');
+begin
+  var line := GetTimestampPrefix + aText;
+
+  var sw := TStreamWriter.Create(ChangeFileExt(Application.ExeName, '.log'), True);
+  sw.WriteLine(line);
+  sw.Free;
+
+  meLog.Lines.Append(line);
+end;
+
+
+procedure TForm1.LogAppendVerbose(const aText: string = '');
+begin
+  var line := GetTimestampPrefix + aText;
+
+  var sw := TStreamWriter.Create(ChangeFileExt(Application.ExeName, '.log'), True);
+  sw.WriteLine(line);
+  sw.Free;
+end;
+
+
 procedure TForm1.HandleBuilderStepBegin(aStep: Integer);
 begin
   TThread.Synchronize(nil,
@@ -132,7 +182,10 @@ begin
     begin
       meInfo.Text := fBuilderManager.GetInfo;
 
-      meLog.Lines.Append(Format('>>>--- Step "%s"', [fBuilderManager.GetStepName(aStep)]));
+      LogAppend('----------');
+      LogAppend(Format('%s:', [fBuilderManager.GetStepName(aStep)]));
+
+      fInsideStep := True;
       fStepPanel[aStep].Color := $80FFFF; // Yellow
     end);
 end;
@@ -145,7 +198,9 @@ begin
     begin
       meInfo.Text := fBuilderManager.GetInfo;
 
-      meLog.Lines.Append(Format('>>>--- Done "%s"', [fBuilderManager.GetStepName(aStep)]));
+      LogAppend('Done');
+
+      fInsideStep := False;
       fStepPanel[aStep].Caption := Format('%.1fsec', [aTimeMsec / 1000]);
       fStepPanel[aStep].Color := $80FF80; // Green
     end);
@@ -159,7 +214,9 @@ begin
     begin
       meInfo.Text := fBuilderManager.GetInfo;
 
-      meLog.Lines.Append(Format('>>>--- Fail "%s"', [fBuilderManager.GetStepName(aStep)]));
+      LogAppend(Format('FAIL "%s"', [fBuilderManager.GetStepName(aStep)]));
+
+      fInsideStep := False;
       fStepPanel[aStep].Caption := Format('%.1fsec', [aTimeMsec / 1000]);
       fStepPanel[aStep].Color := $8080FF; // Red
     end);
@@ -179,7 +236,10 @@ begin
     procedure
     begin
       ControlsEnable(True);
-      meLog.Lines.Append('Scenario done');
+
+      LogAppend('----------');
+
+      LogAppend('RESULT: SUCCESS');
     end);
 end;
 
@@ -189,11 +249,11 @@ begin
   TThread.Synchronize(nil,
     procedure
     begin
-      var sw := TStreamWriter.Create(ChangeFileExt(Application.ExeName, '.log'), True);
-      sw.WriteLine(aText);
-      sw.Free;
+      var line := aText;
+      if fInsideStep then
+        line := '| ' + line;
 
-      meLog.Lines.Append(aText);
+      LogAppend(line);
     end);
 end;
 
@@ -203,9 +263,11 @@ begin
   TThread.Synchronize(nil,
     procedure
     begin
-      var sw := TStreamWriter.Create(ChangeFileExt(Application.ExeName, '.log'), True);
-      sw.WriteLine(aText);
-      sw.Free;
+      var line := aText;
+      if fInsideStep then
+        line := '| ' + line;
+
+      LogAppendVerbose(line);
     end);
 end;
 
@@ -242,6 +304,7 @@ end;
 
 procedure TForm1.btnBuildAllProjectsClick(Sender: TObject);
 begin
+  ResetRunState;
   fBuilderManager.ExecuteWholeProjectGroup(fDefaultBuildConfiguration);
 end;
 
@@ -255,6 +318,8 @@ begin
   for var I := 0 to fBuilderManager.GetStepCount - 1 do
     fStepPanel[I].Color := $808080;
 
+  ResetRunState;
+
   var buildScenario := TButton(Sender).Tag;
   fBuilderManager.ExecuteScenario(buildScenario);
 end;
@@ -265,6 +330,9 @@ begin
   meInfo.Text := fBuilderManager.GetInfo;
 
   ControlsEnable(False);
+
+  ResetRunState;
+
   var step := TButton(Sender).Tag;
   fBuilderManager.ExecuteStep(step, fDefaultBuildConfiguration);
 end;
