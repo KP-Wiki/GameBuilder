@@ -385,78 +385,83 @@ end;
 
 procedure TKMBuilderKP.Step04_WriteVersion(aConfig: TKMBuildConfiguration);
 begin
-  // Write revision number for the game exe and Launcher/Updater
+  // Revision number in quotes for the game exe - "'r19200'"
   TFile.WriteAllText('.\KM_Revision.inc', #39 + 'r' + IntToStr(fBuildRevision) + #39);
-  TFile.WriteAllText('.\version', Format('%d.%d.%d r%d', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]));
 
-  var countVerInfoMajor := 0;
-  var countVerInfoMinor := 0;
-  var countVerInfoRelease := 0;
-  var countVerInfoBuild := 0;
-  var countFileVersion := 0;
-  var countProductVersion := 0;
+  // SemVer for Launcher/Updater - "Knights Province 0.14.0 r19200"
+  TFile.WriteAllText('.\version', Format('%s %d.%d.%d r%d', [fGameName, fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]));
 
-  var sl := TStringList.Create;
-  try
-    sl.LoadFromFile('.\KnightsProvince.dproj');
-    for var I := 0 to sl.Count - 1 do
-    begin
-      var tagVerInfoMajorOpen := Pos('<VerInfo_MajorVer>', sl[I]);
-      if tagVerInfoMajorOpen > 0 then
+  // App version for Exe
+  begin
+    var countVerInfoMajor := 0;
+    var countVerInfoMinor := 0;
+    var countVerInfoRelease := 0;
+    var countVerInfoBuild := 0;
+    var countFileVersion := 0;
+    var countProductVersion := 0;
+
+    var sl := TStringList.Create;
+    try
+      sl.LoadFromFile('.\KnightsProvince.dproj');
+      for var I := 0 to sl.Count - 1 do
       begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [fBuildEpoch]);
-        Inc(countVerInfoMajor);
-      end;
-      var tagVerInfoMinorOpen := Pos('<VerInfo_MinorVer>', sl[I]);
-      if tagVerInfoMinorOpen > 0 then
-      begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [fBuildMajor]);
-        Inc(countVerInfoMinor);
-      end;
-      var tagVerInfoReleaseOpen := Pos('<VerInfo_Release>', sl[I]);
-      if tagVerInfoReleaseOpen > 0 then
-      begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [fBuildMinor]);
-        Inc(countVerInfoRelease);
-      end;
-      var tagVerInfoBuildOpen := Pos('<VerInfo_Build>', sl[I]);
-      if tagVerInfoBuildOpen > 0 then
-      begin
-        sl[I] := Copy(sl[I], 1, tagVerInfoBuildOpen - 1) + Format('<VerInfo_Build>%d</VerInfo_Build>', [fBuildRevision]);
-        Inc(countVerInfoBuild);
+        var tagVerInfoMajorOpen := Pos('<VerInfo_MajorVer>', sl[I]);
+        if tagVerInfoMajorOpen > 0 then
+        begin
+          sl[I] := Copy(sl[I], 1, tagVerInfoMajorOpen - 1) + Format('<VerInfo_MajorVer>%d</VerInfo_MajorVer>', [fBuildEpoch]);
+          Inc(countVerInfoMajor);
+        end;
+        var tagVerInfoMinorOpen := Pos('<VerInfo_MinorVer>', sl[I]);
+        if tagVerInfoMinorOpen > 0 then
+        begin
+          sl[I] := Copy(sl[I], 1, tagVerInfoMinorOpen - 1) + Format('<VerInfo_MinorVer>%d</VerInfo_MinorVer>', [fBuildMajor]);
+          Inc(countVerInfoMinor);
+        end;
+        var tagVerInfoReleaseOpen := Pos('<VerInfo_Release>', sl[I]);
+        if tagVerInfoReleaseOpen > 0 then
+        begin
+          sl[I] := Copy(sl[I], 1, tagVerInfoReleaseOpen - 1) + Format('<VerInfo_Release>%d</VerInfo_Release>', [fBuildMinor]);
+          Inc(countVerInfoRelease);
+        end;
+        var tagVerInfoBuildOpen := Pos('<VerInfo_Build>', sl[I]);
+        if tagVerInfoBuildOpen > 0 then
+        begin
+          sl[I] := Copy(sl[I], 1, tagVerInfoBuildOpen - 1) + Format('<VerInfo_Build>%d</VerInfo_Build>', [fBuildRevision]);
+          Inc(countVerInfoBuild);
+        end;
+
+        var tagVerInfoKeysOpen := Pos('<VerInfo_Keys>', sl[I]);
+        if tagVerInfoKeysOpen > 0 then
+        begin
+          var tagFileVersionOpen := Pos('FileVersion=', sl[I]);
+          var tagFileVersionClose := Pos(';', sl[I], tagFileVersionOpen);
+
+          // Must contain only four numbers separated by "."
+          sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
+          Inc(countFileVersion);
+
+          var tagProductVersionOpen := Pos('ProductVersion=', sl[I]);
+          var tagProductVersionClose := Pos(';', sl[I], tagProductVersionOpen);
+
+          sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
+          Inc(countProductVersion);
+        end;
       end;
 
-      var tagVerInfoKeysOpen := Pos('<VerInfo_Keys>', sl[I]);
-      if tagVerInfoKeysOpen > 0 then
-      begin
-        var tagFileVersionOpen := Pos('FileVersion=', sl[I]);
-        var tagFileVersionClose := Pos(';', sl[I], tagFileVersionOpen);
-
-        // Must contain only four numbers separated by "."
-        sl[I] := Copy(sl[I], 1, tagFileVersionOpen - 1) + Format('FileVersion=%d.%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor, fBuildRevision]) + Copy(sl[I], tagFileVersionClose, Length(sl[I]));
-        Inc(countFileVersion);
-
-        var tagProductVersionOpen := Pos('ProductVersion=', sl[I]);
-        var tagProductVersionClose := Pos(';', sl[I], tagProductVersionOpen);
-
-        sl[I] := Copy(sl[I], 1, tagProductVersionOpen - 1) + Format('ProductVersion=%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor]) + Copy(sl[I], tagProductVersionClose, Length(sl[I]));
-        Inc(countProductVersion);
-      end;
+      // We save updated DPROJ even if it is malformed - since it is under VCS it will be trivial to inspect and revert
+      sl.SaveToFile('.\KnightsProvince.dproj');
+    finally
+      sl.Free;
     end;
 
-    // We save updated DPROJ even if it is malformed - since it is under VCS it will be trivial to inspect and revert
-    sl.SaveToFile('.\KnightsProvince.dproj');
-  finally
-    sl.Free;
+    // We expect every tag to be present exactly once
+    if countVerInfoMajor <> 1 then   raise Exception.Create('VerInfo_Major encountered not once');
+    if countVerInfoMinor <> 1 then   raise Exception.Create('VerInfo_Minor encountered not once');
+    if countVerInfoRelease <> 1 then raise Exception.Create('VerInfo_Release encountered not once');
+    if countVerInfoBuild <> 1 then   raise Exception.Create('VerInfo_Build encountered not once');
+    if countFileVersion <> 1 then    raise Exception.Create('FileVersion encountered not once');
+    if countProductVersion <> 1 then raise Exception.Create('ProductVersion encountered not once');
   end;
-
-  // We expect every tag to be present exactly once
-  if countVerInfoMajor <> 1 then   raise Exception.Create('VerInfo_Major encountered not once');
-  if countVerInfoMinor <> 1 then   raise Exception.Create('VerInfo_Minor encountered not once');
-  if countVerInfoRelease <> 1 then raise Exception.Create('VerInfo_Release encountered not once');
-  if countVerInfoBuild <> 1 then   raise Exception.Create('VerInfo_Build encountered not once');
-  if countFileVersion <> 1 then    raise Exception.Create('FileVersion encountered not once');
-  if countProductVersion <> 1 then raise Exception.Create('ProductVersion encountered not once');
 end;
 
 
