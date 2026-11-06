@@ -120,6 +120,9 @@ begin
   // Full build without commit
   fBuildScenarios.Add(TKMBuildScenario.Create('Full build to folder',        bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
 
+  // Full build without commit
+  fBuildScenarios.Add(TKMBuildScenario.Create('Full build to 7z',            bcRelease, [0,1,2,3,4,5,6,7,    10,11,12,13]));
+
   // Nightly build (same as Release, without Installer)
   fBuildScenarios.Add(TKMBuildScenario.Create('Nightly build (7z)',          bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,   15,16,17]));
 
@@ -478,6 +481,15 @@ begin
   DeleteRecursive(ExpandFileName('.\'), [
     '*.~*', '*.ddp', '*.drc', '*.dcp', '*.dcu', '*.dsk', '*.o', '*.or', '*.ppu', '*.compiled', '*.local', '*.tmp', '*.log',
     'thumbs.db', 'descript.ion', 'bugreport.txt', '*.skincfg', '*.identcache', '*.tvsconfig', '*.mi', '*.log.txt', '*.stat', '*.bak'], ['.git', 'Builder.log']);
+
+  // Delete old binaries
+  DeleteFileIfExists('.\KnightsProvince.exe');
+  DeleteFileIfExists('.\ScriptValidator.exe');
+  DeleteFileIfExists('.\utils\TranslationManager (from kp-wiki)\TranslationManager.exe');
+  DeleteFileIfExists('.\utils\KP_DedicatedServer\KP_DedicatedServer.exe');
+  DeleteFileIfExists('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x86');
+  DeleteFileIfExists('.\utils\KP_DedicatedServer\KP_DedicatedServer_Linux_x64');
+  DeleteFileIfExists('.\MinimapGenerator');
 end;
 
 
