@@ -117,10 +117,10 @@ begin
   // We still want ot build the game to make sure it's not broken
   fBuildScenarios.Add(TKMBuildScenario.Create('Full build, tools only',      bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11]));
 
-  // Full build without commit
+  // Full build to local folder
   fBuildScenarios.Add(TKMBuildScenario.Create('Full build to folder',        bcRelease, [0,1,2,3,4,5,6,7,8,9,10,11,12]));
 
-  // Full build without commit
+  // Full build to archive
   fBuildScenarios.Add(TKMBuildScenario.Create('Full build to 7z',            bcRelease, [0,1,2,3,4,5,6,7,    10,11,12,13]));
 
   // Nightly build (same as Release, without Installer)
@@ -231,12 +231,10 @@ end;
 
 procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
   procedure CheckVersion;
-  var
-    foundEpoch, foundMajor, foundMinor: Boolean;
   begin
-    foundEpoch := False;
-    foundMajor := False;
-    foundMinor := False;
+    var foundEpoch := False;
+    var foundMajor := False;
+    var foundMinor := False;
 
     var sr := TStreamReader.Create('.\src\KM_Version.pas');
     repeat
@@ -269,23 +267,32 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
     fOnLog(Format('Game version in "%s" - ok', ['.\src\KM_Version.pas']));
   end;
 
-  procedure CheckReadme(const aReadme, aBuildName: string);
+  procedure CheckModInfo(const aBuildName: string);
   begin
-    var gameVersionFound := 0;
-    var sr := TStreamReader.Create(aReadme, TEncoding.ANSI);
-    var verPos := 0;
+    // Main game modinfo.xml should have game version
+
+    var foundVersion := False;
+    var foundGameVersion := False;
+
+    var strVersion := Format(' Version="%s" ', [aBuildName]);
+    var strGameVersion := Format(' GameVersion="%s" ', [aBuildName]);
+
+    var sr := TStreamReader.Create('.\data\modinfo.xml');
     repeat
-      var htmlLine := sr.ReadLine;
-      verPos := Pos(aBuildName, htmlLine, verPos + 1);
-      if verPos > 0 then
-        Inc(gameVersionFound);
+      var pasLine := sr.ReadLine;
+
+      if ContainsStr(pasLine, strVersion) then
+        foundVersion := True;
+
+      if ContainsStr(pasLine, strGameVersion) then
+        foundGameVersion := True;
     until sr.EndOfStream;
     sr.Free;
 
-    if gameVersionFound <> 2 then
-      raise Exception.CreateFmt('Game version const found %d times. Expected to be found exactly 2 times in the "%s"', [gameVersionFound, aReadme]);
+    if not foundVersion then raise Exception.Create('Version not found in modinfo.xml');
+    if not foundGameVersion then raise Exception.Create('GameVersion not found in modinfo.xml');
 
-    fOnLog(Format('Game version in "%s" - ok', [aReadme]));
+    fOnLog(Format('Game version in "%s" - ok', ['.\data\modinfo.xml']));
   end;
 
   procedure CheckChangelog(const aBuildName: string);
@@ -312,6 +319,25 @@ procedure TKMBuilderKP.Step02_CheckVersion(aConfig: TKMBuildConfiguration);
 
     fOnLog(Format('Game version in "%s" - ok', [changelogFilename]));
   end;
+
+  procedure CheckReadme(const aReadme, aBuildName: string);
+  begin
+    var gameVersionFound := 0;
+    var sr := TStreamReader.Create(aReadme, TEncoding.ANSI);
+    var verPos := 0;
+    repeat
+      var htmlLine := sr.ReadLine;
+      verPos := Pos(aBuildName, htmlLine, verPos + 1);
+      if verPos > 0 then
+        Inc(gameVersionFound);
+    until sr.EndOfStream;
+    sr.Free;
+
+    if gameVersionFound <> 2 then
+      raise Exception.CreateFmt('Game version const found %d times. Expected to be found exactly 2 times in the "%s"', [gameVersionFound, aReadme]);
+
+    fOnLog(Format('Game version in "%s" - ok', [aReadme]));
+  end;
 begin
   // E.g.: 0.14.0
   var buildName := Format('%d.%d.%d', [fBuildEpoch, fBuildMajor, fBuildMinor]);
@@ -322,15 +348,20 @@ begin
 
   if CheckTerminated then Exit;
 
-  //  - Readme
-  CheckReadme('.\Win32\readme_eng.html', buildName);
-  CheckReadme('.\Win32\readme_rus.html', buildName);
-  CheckReadme('.\Win32\readme_spa.html', buildName);
+  //  - modinfo.xml
+  CheckModInfo(buildName);
 
   if CheckTerminated then Exit;
 
   //  - Changelog
   CheckChangelog(buildName);
+
+  if CheckTerminated then Exit;
+
+  //  - Readme
+  CheckReadme('.\Win32\readme_eng.html', buildName);
+  CheckReadme('.\Win32\readme_rus.html', buildName);
+  CheckReadme('.\Win32\readme_spa.html', buildName);
 end;
 
 
